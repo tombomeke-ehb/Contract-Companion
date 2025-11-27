@@ -1,5 +1,6 @@
-# Contract Companion
-  ## De beste AI-gedreven applicatie voor contractanalyse en contractbeheer. Contract Companion is een applicatie die gebruikers toelaat om contracten te uploaden en deze automatisch te laten analyseren door een AI-model gespecialiseerd in legale documenten. Onze tool herkent belangrijke clausules, markeert risico’s en toont alles overzichtelijk in een dashboard. Het doel van Contract Companion is om contractmanagement eenvoudiger, sneller en betrouwbaarder te maken.
+Contract Companion
+##
+  De beste AI-gedreven applicatie voor contractanalyse en contractbeheer. Contract Companion is een applicatie die gebruikers toelaat om contracten te uploaden en deze automatisch te laten analyseren door een AI-model gespecialiseerd in legale documenten. Onze tool herkent belangrijke clausules, markeert risico’s en toont alles overzichtelijk in een dashboard. Het doel van Contract Companion is om contractmanagement eenvoudiger, sneller en betrouwbaarder te maken.
 ---
 ## Kernfunctionaliteiten  
 
