@@ -1,4 +1,7 @@
-// backend/src/server.js
+const express = require('express');
+const cors = require('cors');
+const db = require('./db');
+
 
 import app from "./app.js";
 //import connectDB from "./config/db.js";

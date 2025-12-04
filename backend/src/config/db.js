@@ -15,6 +15,7 @@ async function verbinding(){
   });
   //bevestiging verbinding
   console.log('DB verbonden');
+  alert("DB verbonden");
 };
 
 //nu async functie wnr de db deftig gaat sluiten
