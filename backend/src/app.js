@@ -1,6 +1,6 @@
 // backend/src/app.js
 
-
+import db from "./config/db";
 import express from "express";
 import cors from "cors";
 import path from "path";
