@@ -22,3 +22,14 @@ app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 
 export default app;
+
+//voor de login
+app.post("/api/login", async(req,res)=>{ //maakt de post API route voor de login genaamd /api/login
+    const {email, password}=req.body;
+    try{
+
+    }catch(err){
+
+    }
+
+})
