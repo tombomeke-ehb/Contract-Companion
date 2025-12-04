@@ -1,14 +1,26 @@
-// src/config/db.js
 // Database configuration and connection setup
 
-// import {database} from "{database_library}";
 
-export default async function connectDB() {
-  try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log("Database connected");
-  } catch (err) {
-    console.error(err);
-    process.exit(1);
-  }
-}
+//onderste lijn zorgt ervoor dat we de oracle commandos kunnen gebruiken
+const oracledb= require('oracledb');
+
+//database verbinding maken
+async function verbinding(){
+  //zorgt dat de db verbinding kan maken adhv naam, wachtwoord, service...
+  //await om te wachten om daarna bevestigen
+  await oracledb.createPool({
+    user: 'CC',
+    password: 'x8JR4g2wEVy6',
+    connectString: 'host:1521/orclpdb.ehb.local'
+  });
+  //bevestiging verbinding
+  console.log('DB verbonden');
+};
+
+//nu async functie wnr de db deftig gaat sluiten
+async function close(){
+  await oracledb.getPool().close(0); //0 betekent sluit meteen
+};
+
+
+//queries uitvoeren
