@@ -38,7 +38,7 @@ async function query(sql){
 
 //zorgt dat andere bestanden deze functies kunnen gebruiken
 module.exports = {
-  init,
+  verbinding,
   close,
   query,
 };
