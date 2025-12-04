@@ -23,6 +23,8 @@ Thumbs.db
 # Environment files
 .env
 .env.*
+documentation-key.json
+documentation-key
 
 # Build output
 dist
