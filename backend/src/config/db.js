@@ -37,7 +37,7 @@ async function query(sql){
       }
 };
 
-//zorgt dat andere bestanden deze functies kunnen gebruiken
+//zorgt dat andere bestanden deze functies kunnen gebruiken adhv import
 module.exports = {
   verbinding,
   close,
