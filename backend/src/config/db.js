@@ -24,3 +24,21 @@ async function close(){
 
 
 //queries uitvoeren
+async function query(sql){
+  let conn;
+  options.outFormat = oracledb.OUT_FORMAT_OBJECT;
+  try { conn = await oracledb.getConnection(); const result = await conn.execute(sql);
+     return result;
+    }finally{
+       if (conn) { 
+        await conn.close(); 
+        } 
+      }
+};
+
+//zorgt dat andere bestanden deze functies kunnen gebruiken
+module.exports = {
+  init,
+  close,
+  query,
+};
