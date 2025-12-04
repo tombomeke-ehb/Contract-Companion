@@ -9,5 +9,10 @@
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
+  },
+  "dependencies": {
+    "@google-cloud/documentai": "^9.5.0",
+    "dotenv": "^17.2.3",
+    "multer": "^2.0.2"
   }
 }
