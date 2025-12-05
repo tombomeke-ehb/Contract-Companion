@@ -12,4 +12,7 @@ const storage = multer.diskStorage({
   }
 });
 
-export const uploadContract = multer({ storage }).single("contract");
+const upload = multer({ storage });
+
+export { upload };
+export const uploadContract = upload.single("contract");
