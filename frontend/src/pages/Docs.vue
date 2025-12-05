@@ -271,5 +271,3 @@ const toggleSection = (id) => {
   openSections.value = [...openSections.value, id]
 }
 </script>
-
-
