@@ -93,7 +93,7 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref,watch, onMounted } from 'vue'
 
 const defaultForm = {
   language: 'English',
@@ -144,4 +144,24 @@ const saveSettings = async () => {
   isSaving.value = false
   status.value = 'Settings saved successfully.'
 }
+const veranderThema = (theme) => {
+  const html = document.documentElement // <html>
+
+  if (theme === 'Dark') {
+    html.classList.add('theme-dark')
+  } else {
+    html.classList.remove('theme-dark')
+  }
+}
+watch(
+  () => form.theme,
+  (newTheme) => {
+    veranderThema(newTheme)
+  }
+)
+
+onMounted(() => {
+  veranderThema(form.theme)
+})
+
 </script>
