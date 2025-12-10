@@ -1,13 +1,16 @@
-// backend/src/server.js
-
 import app from "./app.js";
-//import connectDB from "./config/db.js";
+import db from "./config/db.js";// zorgt dat we alle functies van db.js kunnen gebruiken 
+const PORT = process.env.PORT || 1521; //zegt welke poort moet gebruiken voor db
 
-const PORT = process.env.PORT || 3000;
-
-// connect database
-//connectDB();
-
-app.listen(PORT, () => {
-  console.log(`Backend running on http://localhost:${PORT}`);
-});
+async function start(){
+  try{
+    await db.verbinding(); //start db verbinding
+    app.listen(PORT, () => {
+      console.log(`Backend running at http://localhost:${PORT}`);
+    });
+  } catch(err){ 
+    console.error("Database kan niet verbinden:",err);
+    alert("Database niet verbonden");
+  }
+}
+start();
