@@ -170,21 +170,21 @@ const allowedMimeTypes = [
 
 /**
  * Set the selected file for upload, validate type and size
- * @param {File} selectedFile - The file to validate and set
+ * @param {File} incomingFile - The file to validate and set
  */
-function setSelectedFile(selectedFile) {
-  if (!selectedFile) return
+function setSelectedFile(incomingFile) {
+  if (!incomingFile) return
   const maxFileSize = 10 * 1024 * 1024 // 10MB
   // Check file size
-  if (selectedFile.size > maxFileSize) {
+  if (incomingFile.size > maxFileSize) {
     error.value = 'File is larger than 10MB.'
     selectedFile.value = null
     return
   }
   // Check file type
-  const isAllowedType = allowedMimeTypes.includes(selectedFile.type) || /\.(pdf|docx?|txt)$/i.test(selectedFile.name)
+  const isAllowedType = allowedMimeTypes.includes(incomingFile.type) || /\.(pdf|docx?|txt)$/i.test(incomingFile.name)
   if (isAllowedType) {
-    selectedFile.value = selectedFile
+    selectedFile.value = incomingFile
     error.value = ''
     status.value = ''
   } else {
