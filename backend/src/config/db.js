@@ -1,43 +1,46 @@
 // Database configuration and connection setup
 
+const oracledb = require("oracledb");
 
-//onderste lijn zorgt ervoor dat we de oracle commandos kunnen gebruiken
-const oracledb= require('oracledb');
-
-//database verbinding maken
-async function verbinding(){
-  //zorgt dat de db verbinding kan maken adhv naam, wachtwoord, service...
-  //await om te wachten om daarna bevestigen
+// Create Oracle connection pool using environment variables
+async function verbinding() {
   await oracledb.createPool({
-    user: 'CC',
-    password: 'x8JR4g2wEVy6',
-    connectString: 'host:1521/orclpdb.ehb.local'
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    connectString: process.env.DB_CONNECT_STRING, // e.g. host:1521/orclpdb.ehb.local
   });
-  //bevestiging verbinding
-  console.log('DB verbonden');
-  alert("DB verbonden");
-};
 
-//nu async functie wnr de db deftig gaat sluiten
-async function close(){
-  await oracledb.getPool().close(0); //0 betekent sluit meteen
-};
+  console.log("DB connected");
+}
 
+// Gracefully close the connection pool
+async function close() {
+  const pool = oracledb.getPool();
+  if (pool) {
+    await pool.close(0); // 0 means close immediately
+  }
+}
 
-//queries uitvoeren
-async function query(sql){
+// Simple query helper
+async function query(sql, bindParams = [], options = {}) {
   let conn;
-  options.outFormat = oracledb.OUT_FORMAT_OBJECT;
-  try { conn = await oracledb.getConnection(); const result = await conn.execute(sql);
-     return result;
-    }finally{
-       if (conn) { 
-        await conn.close(); 
-        } 
-      }
-};
+  const execOptions = {
+    outFormat: oracledb.OUT_FORMAT_OBJECT,
+    autoCommit: false,
+    ...options,
+  };
 
-//zorgt dat andere bestanden deze functies kunnen gebruiken adhv import
+  try {
+    conn = await oracledb.getConnection();
+    const result = await conn.execute(sql, bindParams, execOptions);
+    return result;
+  } finally {
+    if (conn) {
+      await conn.close();
+    }
+  }
+}
+
 module.exports = {
   verbinding,
   close,
