@@ -1,6 +1,5 @@
 // backend/src/app.js
 
-import db from "./config/db";
 import express from "express";
 import cors from "cors";
 import path from "path";
@@ -24,12 +23,11 @@ app.use("/api/auth", authRoutes);
 export default app;
 
 //voor de login
-app.post("/api/login", async(req,res)=>{ //maakt de post API route voor de login genaamd /api/login
-    const {email, password}=req.body;
-    try{
-
-    }catch(err){
-
-    }
-
-})
+app.post("/api/login", async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    // ...existing code or future login logic...
+  } catch (err) {
+    // ...error handling...
+  }
+});

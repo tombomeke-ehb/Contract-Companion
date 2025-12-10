@@ -1,6 +1,6 @@
 // Database configuration and connection setup
 
-const oracledb = require("oracledb");
+import oracledb from "oracledb";
 
 // Create Oracle connection pool using environment variables
 async function verbinding() {
@@ -41,8 +41,4 @@ async function query(sql, bindParams = [], options = {}) {
   }
 }
 
-module.exports = {
-  verbinding,
-  close,
-  query,
-};
+export { verbinding, close, query };

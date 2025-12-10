@@ -1,11 +1,13 @@
 // frontend/src/api/contracts.js
 
-// Centralised API helpers for working with contract resources from the frontend.
-// Keeps axios calls in one place so components can stay focused on UI logic.
-import axios from 'axios'
+// Centralized API helpers for working with contract resources from the frontend.
+// Keeps HTTP calls in one place so components can stay focused on UI logic.
 
-// Base URL for all contract-related endpoints on the backend.
-const API = 'http://localhost:3000/api/contracts'
+import http from './httpClient';
+
+// Base path for all contract-related endpoints on the backend.
+// The full URL is: VITE_API_URL + BASE_PATH + route
+const BASE_PATH = '/api/contracts';
 
 /**
  * Upload a single contract file to the backend.
@@ -18,14 +20,22 @@ const API = 'http://localhost:3000/api/contracts'
  * @returns {Promise<any>} Parsed JSON response from the backend.
  */
 export async function uploadContract(file) {
-  const form = new FormData()
+  const form = new FormData();
   // Field name MUST match upload.single('file') in backend/src/middleware/upload.js
-  form.append('file', file)
+  form.append('file', file);
 
-  const res = await axios.post(`${API}/upload`, form, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  })
-  return res.data
+  const res = await fetch(`${import.meta.env.VITE_API_URL}${BASE_PATH}/upload`, {
+    method: 'POST',
+    body: form,
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Upload failed: ${res.status} ${text}`);
+  }
+
+  return res.json();
 }
 
 /**
@@ -35,6 +45,5 @@ export async function uploadContract(file) {
  * an array of contract summaries.
  */
 export async function getContracts() {
-  const res = await axios.get(API)
-  return res.data
+  return http.get(BASE_PATH);
 }
