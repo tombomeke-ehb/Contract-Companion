@@ -1,70 +1,65 @@
-// backend/src/controllers/auth.controller.js
-
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { findUserByEmail, createUser } from "../services/user.service.js";
 
-/**
- * Registratie
- */
-export async function register(req, res) {
-  const { name, email, password } = req.body;
+// REGISTER
+export async function registerUser(req, res) {
+  try {
+    console.log("REQ BODY =", req.body); // DEBUG → voir si ThunderClient envoie bien le JSON
 
-  if (!email || !password || !name) {
-    return res.status(400).json({ message: "Vul alle velden in." });
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: "Vul alle velden in." });
+    }
+
+    // Check if user already exists
+    const existing = await findUserByEmail(email);
+    if (existing) {
+      return res.status(400).json({ error: "Email bestaat al." });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user
+    await createUser(name, email, hashedPassword);
+
+    return res.status(201).json({ message: "Account aangemaakt." });
+
+  } catch (err) {
+    console.error("REGISTER ERROR:", err);
+    return res.status(500).json({ error: "Internal server error" });
   }
-
-  const existing = await findUserByEmail(email);
-  if (existing) {
-    return res.status(400).json({ message: "E-mail bestaat al." });
-  }
-
-  const userId = await createUser(name, email, password);
-
-  if (!userId) {
-    return res.status(500).json({ message: "Registratie mislukt." });
-  }
-
-  res.status(201).json({
-    message: "Account aangemaakt.",
-    userId,
-  });
 }
 
-/**
- * Login
- */
-export async function login(req, res) {
-  const { email, password } = req.body;
+// LOGIN
+export async function loginUser(req, res) {
+  try {
+    const { email, password } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ message: "E-mail en wachtwoord vereist." });
+    const user = await findUserByEmail(email);
+    if (!user) {
+      return res.status(401).json({ error: "Ongeldige login." });
+    }
+
+    // Compare hashed password
+    const isValid = await bcrypt.compare(password, user.PASSWORD);
+    if (!isValid) {
+      return res.status(401).json({ error: "Ongeldige login." });
+    }
+
+    return res.json({
+      message: "Login success",
+      user: {
+        id: user.ID_USER,
+        name: user.NAME,
+        email: user.EMAIL,
+        isAdmin: user.ISADMIN === 1
+      }
+    });
+
+  } catch (err) {
+    console.error("LOGIN ERROR:", err);
+    return res.status(500).json({ error: "Internal server error" });
   }
-
-  const user = await findUserByEmail(email);
-
-  if (!user) {
-    return res.status(401).json({ message: "Ongeldige login." });
-  }
-
-  const userId = user[0];
-  const name = user[1];
-  const emailDB = user[2];
-  const hashedPw = user[3];
-  const isAdmin = user[4];
-
-  const isMatch = await bcrypt.compare(password, hashedPw);
-
-  if (!isMatch) {
-    return res.status(401).json({ message: "Ongeldige login." });
-  }
-
-  res.json({
-    message: "Login OK",
-    user: {
-      id: userId,
-      name,
-      email: emailDB,
-      isAdmin,
-    },
-  });
 }
