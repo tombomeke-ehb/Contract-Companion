@@ -1,72 +1,80 @@
-import bcrypt from 'bcrypt'
-import { findUserByEmail, createUser } from '../services/user.service.js'
+// Auth-logica: registreren + inloggen
+// Korte NL-commentaar zodat team direct begrijpt wat gebeurt.
 
-const SALT_ROUNDS = 10 // SALT_ROUNDS bepaalt hoe sterk het wachtwoord gehasht wordt.
-// 10 = standaard niveau: veilig én snel genoeg voor productie.
+import bcrypt from "bcryptjs";
+import {
+  findUserByEmail,
+  createUser
+} from "../services/user.service.js";
 
-// REGISTER
-// - Check input
-// - Check of email al bestaat
-// - Hash password
-// - Maak nieuwe gebruiker via service
-export async function register(req, res) {
+const SALT_ROUNDS = 10;
+// NL: Sterkte van hashing. 10 = veilig en performant.
+
+/**
+ * POST /api/auth/register
+ * NL: "Maakt een nieuwe gebruiker aan als email nog niet bestaat."
+ */
+export async function registerUser(req, res) {
+  const { email, password } = req.body;
+
+  if (!email || !password)
+    return res.status(400).json({ message: "Email en wachtwoord zijn verplicht." });
+
   try {
-    const { name, email, password } = req.body
+    // Check of user al bestaat
+    const existingUser = await findUserByEmail(email);
+    if (existingUser)
+      return res.status(409).json({ message: "Email bestaat al." });
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: 'Name, email and password required.' })
-    }
+    // Wachtwoord hashen
+    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
-    const existing = await findUserByEmail(email)
-    if (existing) {
-      return res.status(409).json({ message: 'Email already in use.' })
-    }
-
-    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS)
-
-    const user = await createUser({ name, email, passwordHash })
+    // Nieuwe user opslaan (standaard geen admin → 0)
+    const userId = await createUser(email, passwordHash, 0);
 
     return res.status(201).json({
-      message: 'User registered.',
-      user
-    })
+      message: "Account succesvol aangemaakt.",
+      userId
+    });
+
   } catch (err) {
-    console.error(err)
-    return res.status(500).json({ message: 'Register error.' })
+    console.error("Register error:", err);
+    return res.status(500).json({ message: "Serverfout tijdens registratie." });
   }
 }
 
-// LOGIN
-// - User zoeken op email
-// - Password vergelijken met hash
-export async function login(req, res) {
+/**
+ * POST /api/auth/login
+ * NL: "Controleren of user bestaat + wachtwoord vergelijken."
+ */
+export async function loginUser(req, res) {
+  const { email, password } = req.body;
+
+  if (!email || !password)
+    return res.status(400).json({ message: "Email en wachtwoord zijn verplicht." });
+
   try {
-    const { email, password } = req.body
+    // User ophalen uit database
+    const user = await findUserByEmail(email);
+    if (!user)
+      return res.status(401).json({ message: "Ongeldige login." });
 
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password required.' })
-    }
+    // Wachtwoord vergelijken met hash
+    const match = await bcrypt.compare(password, user.passwordHash);
+    if (!match)
+      return res.status(401).json({ message: "Ongeldige login." });
 
-    const user = await findUserByEmail(email)
-    if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials.' })
-    }
-
-    const match = await bcrypt.compare(password, user.passwordHash)
-    if (!match) {
-      return res.status(401).json({ message: 'Invalid credentials.' })
-    }
+    // Admin-check: 1 = admin, 0 = gewone user
+    const isAdmin = user.isAdmin === 1;
 
     return res.status(200).json({
-      message: 'Login successful.',
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email
-      }
-    })
+      message: "Login geslaagd.",
+      userId: user.id,
+      isAdmin
+    });
+
   } catch (err) {
-    console.error(err)
-    return res.status(500).json({ message: 'Login error.' })
+    console.error("Login error:", err);
+    return res.status(500).json({ message: "Serverfout tijdens login." });
   }
 }
