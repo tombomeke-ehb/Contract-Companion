@@ -1,10 +1,10 @@
-import express from "express";
+import { Router } from "express";
+import { registerUser, loginUser } from "../controllers/auth.controller.js";
 
-const router = express.Router();
+const router = Router();
 
-// Dummy login route for testing
-router.post("/login", (req, res) => {
-  res.json({ message: "Login route werkt!" });
-});
+// NL: Auth-routes voor registratie en login
+router.post("/register", registerUser);
+router.post("/login", loginUser);
 
 export default router;
