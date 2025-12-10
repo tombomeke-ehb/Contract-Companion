@@ -21,3 +21,13 @@ app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 
 export default app;
+
+//voor de login
+app.post("/api/login", async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    // ...existing code or future login logic...
+  } catch (err) {
+    // ...error handling...
+  }
+});
