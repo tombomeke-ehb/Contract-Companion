@@ -1,80 +1,70 @@
-// Auth-logica: registreren + inloggen
-// Korte NL-commentaar zodat team direct begrijpt wat gebeurt.
+// backend/src/controllers/auth.controller.js
 
-import bcrypt from "bcryptjs";
-import {
-  findUserByEmail,
-  createUser
-} from "../services/user.service.js";
-
-const SALT_ROUNDS = 10;
-// NL: Sterkte van hashing. 10 = veilig en performant.
+import bcrypt from "bcrypt";
+import { findUserByEmail, createUser } from "../services/user.service.js";
 
 /**
- * POST /api/auth/register
- * NL: "Maakt een nieuwe gebruiker aan als email nog niet bestaat."
+ * Registratie
  */
-export async function registerUser(req, res) {
-  const { email, password } = req.body;
+export async function register(req, res) {
+  const { name, email, password } = req.body;
 
-  if (!email || !password)
-    return res.status(400).json({ message: "Email en wachtwoord zijn verplicht." });
-
-  try {
-    // Check of user al bestaat
-    const existingUser = await findUserByEmail(email);
-    if (existingUser)
-      return res.status(409).json({ message: "Email bestaat al." });
-
-    // Wachtwoord hashen
-    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-
-    // Nieuwe user opslaan (standaard geen admin → 0)
-    const userId = await createUser(email, passwordHash, 0);
-
-    return res.status(201).json({
-      message: "Account succesvol aangemaakt.",
-      userId
-    });
-
-  } catch (err) {
-    console.error("Register error:", err);
-    return res.status(500).json({ message: "Serverfout tijdens registratie." });
+  if (!email || !password || !name) {
+    return res.status(400).json({ message: "Vul alle velden in." });
   }
+
+  const existing = await findUserByEmail(email);
+  if (existing) {
+    return res.status(400).json({ message: "E-mail bestaat al." });
+  }
+
+  const userId = await createUser(name, email, password);
+
+  if (!userId) {
+    return res.status(500).json({ message: "Registratie mislukt." });
+  }
+
+  res.status(201).json({
+    message: "Account aangemaakt.",
+    userId,
+  });
 }
 
 /**
- * POST /api/auth/login
- * NL: "Controleren of user bestaat + wachtwoord vergelijken."
+ * Login
  */
-export async function loginUser(req, res) {
+export async function login(req, res) {
   const { email, password } = req.body;
 
-  if (!email || !password)
-    return res.status(400).json({ message: "Email en wachtwoord zijn verplicht." });
-
-  try {
-    // User ophalen uit database
-    const user = await findUserByEmail(email);
-    if (!user)
-      return res.status(401).json({ message: "Ongeldige login." });
-
-    // Wachtwoord vergelijken met hash
-    const match = await bcrypt.compare(password, user.passwordHash);
-    if (!match)
-      return res.status(401).json({ message: "Ongeldige login." });
-
-    // Admin-check: 1 = admin, 0 = gewone user
-    const isAdmin = user.isAdmin === 1;
-
-    return res.status(200).json({
-      message: "Login geslaagd.",
-      userId: user.id,
-      isAdmin
-    });
-
-  } catch (err) {
-    console.error("Login error:", err);
-    return res.status(500).json({ message: "Serverfout tijdens login." });
+  if (!email || !password) {
+    return res.status(400).json({ message: "E-mail en wachtwoord vereist." });
   }
+
+  const user = await findUserByEmail(email);
+
+  if (!user) {
+    return res.status(401).json({ message: "Ongeldige login." });
+  }
+
+  const userId = user[0];
+  const name = user[1];
+  const emailDB = user[2];
+  const hashedPw = user[3];
+  const isAdmin = user[4];
+
+  const isMatch = await bcrypt.compare(password, hashedPw);
+
+  if (!isMatch) {
+    return res.status(401).json({ message: "Ongeldige login." });
+  }
+
+  res.json({
+    message: "Login OK",
+    user: {
+      id: userId,
+      name,
+      email: emailDB,
+      isAdmin,
+    },
+  });
 }

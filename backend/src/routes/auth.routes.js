@@ -1,10 +1,11 @@
-import { Router } from "express";
-import { registerUser, loginUser } from "../controllers/auth.controller.js";
+// backend/src/routes/auth.routes.js
 
-const router = Router();
+import express from "express";
+import { register, login } from "../controllers/auth.controller.js";
 
-// NL: Auth-routes voor registratie en login
-router.post("/register", registerUser);
-router.post("/login", loginUser);
+const router = express.Router();
+
+router.post("/register", register);
+router.post("/login", login);
 
 export default router;
