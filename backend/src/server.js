@@ -1,5 +1,5 @@
 import app from "./app.js";
-import db from "./config/db.js"; // allows us to use all functions from db.js
+import * as db from "./config/db.js"; // allows us to use all functions from db.js
 
 // Use a separate port for the backend server, not the Oracle DB port
 const PORT = process.env.PORT || 3000;
