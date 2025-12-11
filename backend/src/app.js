@@ -40,6 +40,7 @@ app.use("/public", express.static(path.join(process.cwd(), "public")));
 // API routes
 app.use("/api/contracts", contractRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/people", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/preferences", preferenceRoutes);
 
