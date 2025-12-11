@@ -28,6 +28,8 @@ jobs:
 
       - name: Build frontend
         run: npm run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
       - name: Deploy via FTP to Combell
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
