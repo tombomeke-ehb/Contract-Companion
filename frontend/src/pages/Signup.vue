@@ -9,13 +9,24 @@
 
       <form class="form" @submit.prevent="handleSignup">
         <div class="form-group">
-          <label class="label" for="signup-name">Full name</label>
+          <label class="label" for="signup-name">First name</label>
           <input
             id="signup-name"
             v-model="form.name"
             class="input"
             type="text"
-            placeholder="Jane Doe"
+            placeholder="Jane"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label class="label" for="signup-surname">Surname</label>
+          <input
+            id="signup-surname"
+            v-model="form.surname"
+            class="input"
+            type="text"
+            placeholder="Doe"
             required
           />
         </div>
@@ -87,6 +98,7 @@ const router = useRouter()
 
 const form = reactive({
   name: '',
+  surname: '',
   email: '',
   password: ''
 })
@@ -95,8 +107,8 @@ const isSubmitting = ref(false)
 const error = ref('')
 
 const handleSignup = async () => {
-  if (!form.name || !form.email || form.password.length < 8) {
-    error.value = 'Please fill in all fields (password needs 8+ characters).'
+  if (!form.name || !form.surname || !form.email || form.password.length < 8) {
+    error.value = 'Please fill in all fields (including surname, password needs 8+ characters).'
     return
   }
 
