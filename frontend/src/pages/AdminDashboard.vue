@@ -59,8 +59,12 @@
         <h2 class="card-title" style="margin-bottom: 1rem;">Add New Person</h2>
         <form @submit.prevent="addPerson">
           <div class="form-group">
-            <label class="label">Name</label>
+            <label class="label">First name</label>
             <input v-model="form.name" class="input" type="text" required />
+          </div>
+          <div class="form-group">
+            <label class="label">Surname</label>
+            <input v-model="form.surname" class="input" type="text" required />
           </div>
           <div class="form-group">
             <label class="label">Email</label>
@@ -162,15 +166,47 @@ function goToReport(id) {
 
 //code voor adding person
 const showModal = ref(false)
-const form = reactive({ name: '', email: '', phone: '', password: '' })
+const form = reactive({ name: '', surname: '', email: '', phone: '', password: '' })
 
-const addPerson = () => {
-  console.log('Added:', form)
-  form.name = ''
-  form.email = ''
-  form.password = ''
-  form.phone = ''
-  showModal.value = false
+const addPerson = async () => {
+  try {
+    await createPersonAPI({
+      name: form.name,
+      surname: form.surname,
+      email: form.email,
+      password: form.password,
+      phone: form.phone
+    })
+
+    // Optioneel: lokaal lijstje updaten voor directe feedback
+    const now = new Date()
+    const dateLabel = now.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    })
+
+    people.push({
+      id: Date.now(),
+      name: form.name,
+      surname: form.surname,
+      email: form.email,
+      phone: form.phone,
+      risk: 'high',
+      riskLabel: 'High risk',
+      date: dateLabel
+    })
+
+    form.name = ''
+    form.surname = ''
+    form.email = ''
+    form.password = ''
+    form.phone = ''
+    showModal.value = false
+  } catch (error) {
+    console.error('Failed to add person:', error)
+    alert('Error creating user. Please try again.')
+  }
 }
 
 // Delete person function - integrated with API
