@@ -3,7 +3,7 @@
 import express from 'express'
 import { upload } from '../middleware/upload.js'
 import { processContractPdf } from '../services/documentOCR.service.js'
-import { analyzeContract, getContracts, getContractSummaryByDocument } from '../controllers/contract.controller.js'
+import { analyzeContract, getContracts } from '../controllers/contract.controller.js'
 
 const router = express.Router()
 
@@ -46,6 +46,5 @@ router.post('/upload-raw', upload.single('file'), async (req, res) => {
 // High-level API used by the frontend
 router.post('/upload', upload.single('file'), analyzeContract)
 router.get('/', getContracts)
-router.get('/document/:idDoc', getContractSummaryByDocument)
 
 export default router
