@@ -4,12 +4,12 @@ import { findUserByEmail, createUser } from "../services/user.service.js";
 // REGISTER
 export async function registerUser(req, res) {
   try {
-    console.log("REQ BODY =", req.body); // DEBUG → voir si ThunderClient envoie bien le JSON
+    console.log("REQ BODY =", req.body);
 
-    const { name, email, password } = req.body;
+    const { name, surname, email, password } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ error: "Vul alle velden in." });
+    if (!name || !surname || !email || !password) {
+      return res.status(400).json({ error: "Vul alle velden in (inclusief achternaam)." });
     }
 
     // Check if user already exists
@@ -21,8 +21,8 @@ export async function registerUser(req, res) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
-    await createUser(name, email, hashedPassword);
+    // Create user (surname is verplicht)
+    await createUser(name, email, hashedPassword, surname);
 
     return res.status(201).json({ message: "Account aangemaakt." });
 
