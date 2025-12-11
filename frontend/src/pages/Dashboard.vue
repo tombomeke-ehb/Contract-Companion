@@ -5,52 +5,67 @@
       <div class="card-header">
         <div>
           <h1 class="section-title" style="margin-bottom: 0.25rem">
-            Welcome back, John
+            {{ $t('dashboard.welcomeBack') }}
           </h1>
           <p class="section-subtitle" style="margin-bottom: 0">
-            Here’s what’s happening with your contracts.
+            {{ $t('dashboard.subtitle') }}
           </p>
         </div>
         <RouterLink :to="{ name: 'upload' }" class="btn btn-primary">
-          Upload New Contract
+          {{ $t('dashboard.uploadNewContract') }}
         </RouterLink>
       </div>
     </div>
 
     <div class="stats-grid" style="margin-bottom: 2rem;">
       <div class="stat-card" @click="filterRisk('all')" style="cursor:pointer;">
-        <span class="stat-label">Total Analyses</span>
+        <span class="stat-label">{{ $t('dashboard.totalAnalyses') }}</span>
         <span class="stat-value">{{ reports.length }}</span>
       </div>
       <div class="stat-card" @click="filterRisk('high')" style="cursor:pointer;">
-        <span class="stat-label">High Risk Found</span>
+        <span class="stat-label">{{ $t('dashboard.highRiskFound') }}</span>
         <span class="stat-value">{{ highRiskCount }}</span>
       </div>
       <div class="stat-card" @click="filterMonth(currentMonth)" style="cursor:pointer;">
-        <span class="stat-label">This Month</span>
+        <span class="stat-label">{{ $t('dashboard.thisMonth') }}</span>
         <span class="stat-value">{{ thisMonthCount }}</span>
       </div>
     </div>
 
     <div style="display:flex; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap;">
       <select v-model="riskFilter" class="select" style="min-width:160px;">
-        <option value="all">All risk levels</option>
-        <option value="high">High risk</option>
-        <option value="medium">Medium risk</option>
-        <option value="low">Low risk</option>
+        <option value="all">{{ $t('dashboard.filterRiskAll') }}</option>
+        <option value="high">{{ $t('dashboard.filterRiskHigh') }}</option>
+        <option value="medium">{{ $t('dashboard.filterRiskMedium') }}</option>
+        <option value="low">{{ $t('dashboard.filterRiskLow') }}</option>
       </select>
       <select v-model="monthFilter" class="select" style="min-width:160px;">
-        <option value="all">All months</option>
-        <option v-for="month in months" :key="month" :value="month">{{ month }}</option>
+        <option value="all">{{ $t('dashboard.filterMonthAll') }}</option>
+        <option
+          v-for="month in months"
+          :key="month"
+          :value="month"
+        >
+          {{ month }}
+        </option>
       </select>
     </div>
 
     <section class="card" style="margin-bottom:2rem;">
       <div class="card-header">
-        <div class="card-title">Recent Contract Analyses</div>
+        <div class="card-title">{{ $t('dashboard.recentAnalyses') }}</div>
       </div>
       <transition-group name="fade" tag="ul" class="report-list">
-        <li v-for="report in filteredReports" :key="report.id" class="report-list__item" style="align-items:center;" @click="goToReport(report.id)" tabindex="0" @keydown.enter="goToReport(report.id)" @keydown.space="goToReport(report.id)">
+        <li
+          v-for="report in filteredReports"
+          :key="report.id"
+          class="report-list__item"
+          style="align-items:center;"
+          @click="goToReport(report.id)"
+          tabindex="0"
+          @keydown.enter="goToReport(report.id)"
+          @keydown.space="goToReport(report.id)"
+        >
           <div style="min-width:220px;">
             <h3 style="margin-bottom:0.25rem;">{{ report.title }}</h3>
             <p class="card-subtitle">{{ report.subtitle }}</p>
@@ -65,13 +80,13 @@
               :to="{ name: 'report-detail', params: { id: report.id } }"
               style="margin-left:0.5rem;"
             >
-              View
+              {{ $t('dashboard.view') }}
             </RouterLink>
           </div>
         </li>
       </transition-group>
       <p v-if="!filteredReports.length" class="card-subtitle">
-        No reports match this filter yet.
+        {{ $t('dashboard.noReports') }}
       </p>
     </section>
   </section>

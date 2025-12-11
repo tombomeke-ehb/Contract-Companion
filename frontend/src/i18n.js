@@ -34,7 +34,28 @@ const messages = {
       minutes: 'min',
 
       notifications: 'Notifications'
+    },
+
+     dashboard: {
+      welcomeBack: 'Welcome back, John',
+      subtitle: 'Here’s what’s happening with your contracts.',
+      uploadNewContract: 'Upload New Contract',
+
+      totalAnalyses: 'Total Analyses',
+      highRiskFound: 'High Risk Found',
+      thisMonth: 'This Month',
+
+      filterRiskAll: 'All risk levels',
+      filterRiskHigh: 'High risk',
+      filterRiskMedium: 'Medium risk',
+      filterRiskLow: 'Low risk',
+      filterMonthAll: 'All months',
+
+      recentAnalyses: 'Recent Contract Analyses',
+      view: 'View',
+      noReports: 'No reports match this filter yet.'
     }
+
   },
   nl: {
     settings: {
@@ -71,7 +92,27 @@ const messages = {
       minutes: 'min',
 
       notifications: 'Meldingen'
+    },
+    dashboard: {
+      welcomeBack: 'Welkom terug, John',
+      subtitle: 'Dit is de huidige status van je contracten.',
+      uploadNewContract: 'Nieuw contract uploaden',
+
+      totalAnalyses: 'Totaal aantal analyses',
+      highRiskFound: 'Hoog risico gevonden',
+      thisMonth: 'Deze maand',
+
+      filterRiskAll: 'Alle risiconiveaus',
+      filterRiskHigh: 'Hoog risico',
+      filterRiskMedium: 'Gemiddeld risico',
+      filterRiskLow: 'Laag risico',
+      filterMonthAll: 'Alle maanden',
+
+      recentAnalyses: 'Recente contractanalyses',
+      view: 'Bekijken',
+      noReports: 'Er zijn nog geen rapporten die bij deze filter passen.'
     }
+
   }
 }
 
