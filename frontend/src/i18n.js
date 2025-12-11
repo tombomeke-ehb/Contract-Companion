@@ -6,18 +6,34 @@ const messages = {
       workspace: 'Workspace',
       title: 'Settings',
       subtitle: 'Adjust language, theme and security preferences for your account.',
-      applicationSettings: 'Application settings',
-      security: 'Security',
-      notifications: 'Notifications',
-      reset: 'Reset changes',
-      save: 'Save changes',
+      resetChanges: 'Reset changes',
+      reset: 'Reset changes', 
+      saveChanges: 'Save changes',
+      save: 'Save changes',          
+      saving: 'Saving...',
       cancel: 'Cancel',
       savedStatus: 'Settings saved successfully.',
+      applicationSettings: 'Application settings',
       language: 'Language',
+      languageEnglish: 'English',
+      languageDutch: 'Dutch',
       theme: 'Theme',
+      themeLight: 'Light',
+      themeDark: 'Dark',
       region: 'Region',
+      regionBelgium: 'Belgium',
+      regionNetherlands: 'Netherlands',
+      regionGermany: 'Germany',
+
+      security: 'Security',
       twoFactor: 'Two-factor authentication',
-      sessionTimeout: 'Session timeout'
+      twoFactorEmail: 'Email codes',
+      twoFactorApp: 'Authenticator app',
+      twoFactorDisabled: 'Disabled',
+      sessionTimeout: 'Session timeout',
+      minutes: 'min',
+
+      notifications: 'Notifications'
     }
   },
   nl: {
@@ -25,18 +41,36 @@ const messages = {
       workspace: 'Werkruimte',
       title: 'Instellingen',
       subtitle: 'Pas taal, thema en beveiligingsvoorkeuren voor je account aan.',
-      applicationSettings: 'Applicatie-instellingen',
-      security: 'Beveiliging',
-      notifications: 'Meldingen',
+
+      resetChanges: 'Wijzigingen resetten',
       reset: 'Wijzigingen resetten',
+      saveChanges: 'Wijzigingen opslaan',
       save: 'Wijzigingen opslaan',
+      saving: 'Bezig met opslaan...',
       cancel: 'Annuleren',
       savedStatus: 'Instellingen succesvol opgeslagen.',
+
+      applicationSettings: 'Applicatie-instellingen',
       language: 'Taal',
+      languageEnglish: 'Engels',
+      languageDutch: 'Nederlands',
       theme: 'Thema',
+      themeLight: 'Licht',
+      themeDark: 'Donker',
       region: 'Regio',
+      regionBelgium: 'België',
+      regionNetherlands: 'Nederland',
+      regionGermany: 'Duitsland',
+
+      security: 'Beveiliging',
       twoFactor: 'Tweestapsverificatie',
-      sessionTimeout: 'Sessietime-out'
+      twoFactorEmail: 'E-mailcodes',
+      twoFactorApp: 'Authenticator-app',
+      twoFactorDisabled: 'Uitgeschakeld',
+      sessionTimeout: 'Sessietime-out',
+      minutes: 'min',
+
+      notifications: 'Meldingen'
     }
   }
 }
