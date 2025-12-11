@@ -90,7 +90,20 @@ const messages = {
       terms: 'Terms',
       docs: 'Documentation',
       contact: 'Contact'
-    }
+    },
+    nav: {
+      brand: 'Contract Companion',
+      features: 'Features',
+      docs: 'Documentation',
+      about: 'About',
+      dashboard: 'Dashboard',
+      upload: 'Upload',
+      settings: 'Settings',
+      commonContracts: 'Common Contracts',
+      login: 'Login',
+      signup: 'Sign Up',
+      logout: 'Logout'
+    },
 
 
   },
@@ -184,9 +197,21 @@ const messages = {
       terms: 'Voorwaarden',
       docs: 'Documentatie',
       contact: 'Contact'
-    }
+    },
 
-
+    nav: {
+      brand: 'Contract Companion',
+      features: 'Functionaliteiten',
+      docs: 'Documentatie',
+      about: 'Over',
+      dashboard: 'Dashboard',
+      upload: 'Uploaden',
+      settings: 'Instellingen',
+      commonContracts: 'Standaardcontracten',
+      login: 'Inloggen',
+      signup: 'Registreren',
+      logout: 'Uitloggen'
+    },
   }
 }
 
