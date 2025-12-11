@@ -1,18 +1,24 @@
-import app from "./app.js";
-import * as db from "./config/db.js"; // allows us to use all functions from db.js
+// backend/src/server.js
 
-// Use a separate port for the backend server, not the Oracle DB port
+import dotenv from "dotenv";
+dotenv.config(); // charge .env AVANT toute importation
+
+import app from "./app.js";
+import * as db from "./config/db.js";
+
 const PORT = process.env.PORT || 3000;
 
 async function start() {
   try {
-    await db.verbinding(); // start DB connection
+    await db.verbinding(); // connecte l’Oracle DB
+    console.log("✅ Oracle DB connected");
+
     app.listen(PORT, () => {
       console.log(`Backend running at http://localhost:${PORT}`);
     });
+
   } catch (err) {
-    console.error("Database connection failed:", err);
-    // Logging is enough here; there is no alert in Node.js
+    console.error("❌ Database connection failed:", err);
   }
 }
 

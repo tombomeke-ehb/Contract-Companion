@@ -6,6 +6,7 @@ import path from "path";
 import contractRoutes from "./routes/contract.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import authRoutes from "./routes/auth.routes.js";
+import peopleRoutes from "./routes/people.routes.js";
 
 const app = express();
 
@@ -37,7 +38,9 @@ app.use("/public", express.static(path.join(process.cwd(), "public")));
 // API routes
 app.use("/api/contracts", contractRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/people", userRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/people", peopleRoutes);
 
 export default app;
 

@@ -5,18 +5,18 @@ import http from './httpClient';
 
 export default {
   login(credentials) {
-    return http.post('/auth/login', credentials);
+    return http.post('/api/auth/login', credentials);
   },
 
   signup(data) {
-    return http.post('/auth/signup', data);
+    return http.post('/api/auth/register', data);
   },
 
   me() {
-    return http.get('/auth/me');
+    return http.get('/api/auth/me');
   },
 
   logout() {
-    return http.post('/auth/logout', {});
+    return http.post('/api/auth/logout', {});
   },
 };
