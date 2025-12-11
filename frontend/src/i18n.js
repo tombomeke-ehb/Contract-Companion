@@ -83,7 +83,15 @@ const messages = {
 
       loaderAria: 'Uploading contract',
       loaderText: 'Uploading and analyzing your contract...'
+    },
+    footer: {
+      rights: 'All rights reserved.',
+      privacy: 'Privacy',
+      terms: 'Terms',
+      docs: 'Documentation',
+      contact: 'Contact'
     }
+
 
   },
   nl: {
@@ -169,7 +177,15 @@ const messages = {
 
       loaderAria: 'Contract uploaden',
       loaderText: 'Contract wordt geüpload en geanalyseerd...'
+    },
+    footer: {
+      rights: 'Alle rechten voorbehouden.',
+      privacy: 'Privacy',
+      terms: 'Voorwaarden',
+      docs: 'Documentatie',
+      contact: 'Contact'
     }
+
 
   }
 }
