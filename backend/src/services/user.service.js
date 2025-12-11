@@ -1,111 +1,54 @@
-// Korte service-laag voor user-operaties.
-// Deze functies praten later met Oracle DB (via de persoon die de DB beheert).
+import { query } from "../config/db.js";
 
-import oracledb from "oracledb";
-
-// DB-config halen via .env
-const dbConfig = {
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  connectString: `${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_SERVICE_NAME}`
-};
-
-/**
- * findUserByEmail(email)
- * Zoeken naar een user in de database op basis van e-mail.
- * Haalt 1 gebruiker op, of null als hij niet bestaat.
- */
+// 👉 Zoek user op basis van email
 export async function findUserByEmail(email) {
-  let connection;
+  const sql = `
+    SELECT ID_USER, NAME, SURNAME, EMAIL, PASSWORD, ISADMIN
+    FROM USERS
+    WHERE EMAIL = :email
+  `;
 
-  try {
-    connection = await oracledb.getConnection(dbConfig);
-
-    const result = await connection.execute(
-      `SELECT ID, EMAIL, PASSWORD_HASH, IS_ADMIN
-       FROM USERS
-       WHERE EMAIL = :email`,
-      { email }
-    );
-
-    // Geen resultaat → user bestaat niet
-    if (result.rows.length === 0) return null;
-
-    const row = result.rows[0];
-
-    return {
-      id: row[0],
-      email: row[1],
-      passwordHash: row[2],
-      isAdmin: row[3]
-    };
-
-  } catch (err) {
-    console.error("DB error in findUserByEmail:", err);
-    return null;
-  } finally {
-    if (connection) await connection.close();
-  }
+  const result = await query(sql, { email });
+  return result.rows?.[0] || null;
 }
 
-/**
- * createUser(email, hashedPassword)
- * Gebruiker toevoegen aan de database.
- * NL: "Voegt een nieuwe gebruiker toe en geeft het nieuwe ID terug."
- */
-export async function createUser(email, hashedPassword, isAdmin = 0) {
-  let connection;
+// 👉 Genereer een nieuw ID_USER in code (zonder sequence/trigger)
+async function getNextUserId() {
+  const sql = `
+    SELECT NVL(MAX(ID_USER), 0) + 1 AS NEXT_ID
+    FROM USERS
+  `;
 
-  try {
-    connection = await oracledb.getConnection(dbConfig);
-
-    const result = await connection.execute(
-      `INSERT INTO USERS (EMAIL, PASSWORD_HASH, IS_ADMIN)
-       VALUES (:email, :passwordHash, :isAdmin)
-       RETURNING ID INTO :id`,
-      {
-        email,
-        passwordHash: hashedPassword,
-        isAdmin,
-        id: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT }
-      },
-      { autoCommit: true }
-    );
-
-    return result.outBinds.id[0];
-
-  } catch (err) {
-    console.error("DB error in createUser:", err);
-    return null;
-  } finally {
-    if (connection) await connection.close();
-  }
+  const result = await query(sql);
+  return result.rows[0].NEXT_ID;
 }
 
-/**
- * isAdminUser(userId)
- * Check of een user admin is.
- * Geeft true terug als de gebruiker admin is.
- */
-export async function isAdminUser(id) {
-  let connection;
+// 👉 Maak nieuwe user aan
+// surname is verplicht in de DB; als deze niet wordt meegegeven, vallen we terug op name.
+export async function createUser(name, email, hashedPassword, surname = null) {
+  const finalSurname = surname || name;
 
-  try {
-    connection = await oracledb.getConnection(dbConfig);
+  // Bepaal nieuw ID_USER in de applicatie
+  const idUser = await getNextUserId();
 
-    const result = await connection.execute(
-      `SELECT IS_ADMIN FROM USERS WHERE ID = :id`,
-      { id }
-    );
+  const sql = `
+    INSERT INTO USERS (ID_USER, NAME, SURNAME, EMAIL, PASSWORD, ISADMIN)
+    VALUES (:idUser, :name, :surname, :email, :password, :isAdmin)
+  `;
 
-    if (result.rows.length === 0) return false;
+  // standaard geen admin bij registratie
+  const isAdmin = 0;
 
-    return result.rows[0][0] === 1;
-
-  } catch (err) {
-    console.error("DB error in isAdminUser:", err);
-    return false;
-  } finally {
-    if (connection) await connection.close();
-  }
+  return await query(
+    sql,
+    {
+      idUser,
+      name,
+      surname: finalSurname,
+      email,
+      password: hashedPassword,
+      isAdmin,
+    },
+    { autoCommit: true }
+  );
 }

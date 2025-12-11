@@ -1,0 +1,42 @@
+name: Deploy Frontend to Combell
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+
+      - name: Deploy via FTP to Combell
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.COMBELL_FTP_HOST }}
+          username: ${{ secrets.COMBELL_FTP_USER }}
+          password: ${{ secrets.COMBELL_FTP_PASSWORD }}
+          local-dir: frontend/dist/
+          server-dir: ${{ secrets.COMBELL_FTP_REMOTE_DIR }}
+          dangerous-clean-slate: true
