@@ -93,6 +93,7 @@
 <script setup>
 import { reactive, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
+import auth from '../api/auth'
 
 const router = useRouter()
 
@@ -115,10 +116,14 @@ const handleSignup = async () => {
   isSubmitting.value = true
   error.value = ''
 
-  await new Promise((resolve) => setTimeout(resolve, 800))
-
-  isSubmitting.value = false
-  router.push({ name: 'dashboard' })
+  try {
+    await auth.signup(form)
+    router.push({ name: 'dashboard' })
+  } catch (err) {
+    error.value = err.message || 'Signup failed. Please try again.'
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 const continueWithGoogle = () => {
