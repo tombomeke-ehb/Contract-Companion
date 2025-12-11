@@ -3,7 +3,7 @@ import {
 	listPeople as listPeopleDb,
 	createPerson as createPersonDb,
 	deletePerson as deletePersonDb,
-	findPersonByEmail,
+	findUserByEmail,
 } from "../services/user.service.js";
 
 const SALT_ROUNDS = 10;
@@ -43,7 +43,7 @@ export async function createPerson(req, res) {
 	}
 
 	try {
-		const existing = await findPersonByEmail(email);
+		const existing = await findUserByEmail(email);
 		if (existing) {
 			return res.status(409).json({ message: "A person with this email already exists." });
 		}

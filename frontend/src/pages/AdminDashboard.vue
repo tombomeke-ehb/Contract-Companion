@@ -59,7 +59,7 @@
         <h2 class="card-title" style="margin-bottom: 1rem;">Add New Person</h2>
         <form @submit.prevent="addPerson">
           <div class="form-group">
-            <label class="label">Name</label>
+            <label class="label">First name</label>
             <input v-model="form.name" class="input" type="text" required />
           </div>
           <div class="form-group">
