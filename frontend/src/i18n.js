@@ -54,6 +54,35 @@ const messages = {
       recentAnalyses: 'Recent Contract Analyses',
       view: 'View',
       noReports: 'No reports match this filter yet.'
+    },
+    upload: {
+      eyebrow: 'Upload',
+      title: 'Upload contract',
+      subtitle:
+        'Drag, drop or browse for a contract. We will take care of formatting and highlight the clauses that matter.',
+
+      fileReady: 'File ready to analyse',
+      dragDrop: 'Drag & drop your contract',
+      fileHint: 'PDF, DOC, DOCX or TXT up to 10MB',
+      browseFiles: 'Browse files',
+
+      contractType: 'Contract type',
+      contractTypePlaceholder: 'Select contract type...',
+      notesLabel: 'Notes for the AI',
+      notesPlaceholder:
+        'Share context, deadlines or clauses we should prioritise (optional).',
+
+      notificationsLabel: 'Notifications',
+      notifyByEmail: 'Email me when the analysis is done',
+
+      analyzing: 'Analyzing...',
+      analyzeButton: 'Analyze contract',
+      reset: 'Reset',
+
+      whatHappensNext: 'What happens next',
+
+      loaderAria: 'Uploading contract',
+      loaderText: 'Uploading and analyzing your contract...'
     }
 
   },
@@ -111,6 +140,35 @@ const messages = {
       recentAnalyses: 'Recente contractanalyses',
       view: 'Bekijken',
       noReports: 'Er zijn nog geen rapporten die bij deze filter passen.'
+    },
+    upload: {
+      eyebrow: 'Upload',
+      title: 'Contract uploaden',
+      subtitle:
+        'Sleep een contract hierheen of blader naar een bestand. Wij zorgen voor de opmaak en lichten de belangrijkste clausules uit.',
+
+      fileReady: 'Bestand klaar om te analyseren',
+      dragDrop: 'Sleep je contract hierheen',
+      fileHint: 'PDF, DOC, DOCX of TXT tot 10MB',
+      browseFiles: 'Bestanden bladeren',
+
+      contractType: 'Contracttype',
+      contractTypePlaceholder: 'Kies een contracttype...',
+      notesLabel: 'Notities voor de AI',
+      notesPlaceholder:
+        'Deel context, deadlines of clausules die we moeten prioriteren (optioneel).',
+
+      notificationsLabel: 'Meldingen',
+      notifyByEmail: 'Mail mij wanneer de analyse klaar is',
+
+      analyzing: 'Bezig met analyseren...',
+      analyzeButton: 'Contract analyseren',
+      reset: 'Resetten',
+
+      whatHappensNext: 'Wat gebeurt er daarna',
+
+      loaderAria: 'Contract uploaden',
+      loaderText: 'Contract wordt geüpload en geanalyseerd...'
     }
 
   }

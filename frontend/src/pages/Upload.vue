@@ -1,10 +1,10 @@
 <template>
   <section class="container two-column upload-grid">
     <article class="card" style="margin-bottom:2rem;">
-      <p class="page-eyebrow">Upload</p>
-      <h1 class="section-title">Upload contract</h1>
+      <p class="page-eyebrow">{{ $t('upload.eyebrow') }}</p>
+      <h1 class="section-title">{{ $t('upload.title') }}</h1>
       <p class="section-subtitle">
-        Drag, drop or browse for a contract. We will take care of formatting and highlight the clauses that matter.
+        {{ $t('upload.subtitle') }}
       </p>
 
       <div
@@ -27,55 +27,59 @@
         <div class="upload-zone__icon" aria-hidden="true"></div>
         <div>
           <p class="card-title" style="margin-bottom: 0.35rem">
-            {{ fileName ? 'File ready to analyse' : 'Drag & drop your contract' }}
+            {{
+              fileName
+                ? $t('upload.fileReady')
+                : $t('upload.dragDrop')
+            }}
           </p>
           <p class="upload-zone__hint">
-            {{ fileName || 'PDF, DOC, DOCX or TXT up to 10MB' }}
+            {{ fileName || $t('upload.fileHint') }}
           </p>
         </div>
         <button class="btn btn-outline" type="button" @click.stop="triggerFileInput">
-          Browse files
+          {{ $t('upload.browseFiles') }}
         </button>
       </div>
 
       <form class="form" @submit.prevent="handleSubmit">
         <div class="form-group">
-          <label class="label" for="upload-type">Contract type</label>
+          <label class="label" for="upload-type">{{ $t('upload.contractType') }}</label>
           <select
             id="upload-type"
             v-model="form.contractType"
             class="select"
             required
           >
-            <option disabled value="">Select contract type...</option>
+            <option disabled value="">{{ $t('upload.contractTypePlaceholder') }}</option>
             <option v-for="type in contractTypes" :key="type">{{ type }}</option>
           </select>
         </div>
 
         <div class="form-group">
-          <label class="label" for="upload-notes">Notes for the AI</label>
+          <label class="label" for="upload-notes">{{ $t('upload.notesLabel') }}</label>
           <textarea
             id="upload-notes"
             v-model="form.notes"
             class="textarea"
             rows="4"
-            placeholder="Share context, deadlines or clauses we should prioritise (optional)."
+            :placeholder="$t('upload.notesPlaceholder')"
           ></textarea>
         </div>
 
         <div class="form-group">
-          <label class="label">Notifications</label>
+          <label class="label">{{ $t('upload.notificationsLabel') }}</label>
           <div class="chip-row">
             <label class="chip" :class="{ 'chip--active': notifyByEmail }">
               <input class="visually-hidden" type="checkbox" v-model="notifyByEmail" />
-              Email me when the analysis is done
+              {{ $t('upload.notifyByEmail') }}
             </label>
           </div>
         </div>
 
         <div style="display: flex; gap: 0.75rem; flex-wrap: wrap">
           <button class="btn btn-primary" type="submit" :disabled="isUploading">
-            {{ isUploading ? 'Analyzing...' : 'Analyze contract' }}
+            {{ isUploading ? $t('upload.analyzing') : $t('upload.analyzeButton') }}
           </button>
           <button
             class="btn btn-outline"
@@ -83,7 +87,7 @@
             :disabled="isUploading"
             @click="resetForm"
           >
-            Reset
+            {{ $t('upload.reset') }}
           </button>
         </div>
 
@@ -97,7 +101,7 @@
     </article>
 
     <article class="card">
-      <h2 class="card-title">What happens next</h2>
+      <h2 class="card-title">{{ $t('upload.whatHappensNext') }}</h2>
       <ol class="doc-list doc-list--numbered">
         <li v-for="step in steps" :key="step.title">
           <strong>{{ step.title }}</strong>
@@ -107,11 +111,23 @@
     </article>
   </section>
 
-  <div v-if="isUploading" class="loader-overlay" aria-live="polite" aria-busy="true">
-    <div class="loader-spinner" role="status" aria-label="Uploading contract"></div>
-    <span class="loader-text">Uploading and analyzing your contract...</span>
+  <div
+    v-if="isUploading"
+    class="loader-overlay"
+    aria-live="polite"
+    aria-busy="true"
+  >
+    <div
+      class="loader-spinner"
+      role="status"
+      :aria-label="$t('upload.loaderAria')"
+    ></div>
+    <span class="loader-text">
+      {{ $t('upload.loaderText') }}
+    </span>
   </div>
 </template>
+
 
 <script setup>
 import { reactive, ref, computed } from 'vue'
