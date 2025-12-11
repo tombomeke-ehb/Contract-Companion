@@ -92,8 +92,9 @@
   </section>
 </template>
 
-
 <script setup>
+import { reactive, ref, watch, onMounted } from 'vue'
+
 import { reactive, ref, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import axios from 'axios'
@@ -136,16 +137,6 @@ const notificationLabels = {
 
 const isSaving = ref(false)
 const status = ref('')
-
-const veranderThema = (theme) => {
-  const html = document.documentElement // <html>
-
-  if (theme === 'Dark') {
-    html.classList.add('theme-dark')
-  } else {
-    html.classList.remove('theme-dark')
-  }
-}
 
 
 const mapUiToCode = (languageLabel) => {
@@ -203,6 +194,25 @@ const resetSettings = () => {
   veranderThema(form.theme)
   veranderTaal(form.language)
 }
+const veranderThema=(thema)=>{
+  const html =document.documentElement
+  if(thema==='Dark'){
+    html.classList.add('theme-dark');
+  }else{
+    html.classList.remove('theme-dark');
+  };
+};
+
+watch(
+  () => form.theme,
+  (newTheme) => {
+    veranderThema(newTheme)
+  }
+)
+onMounted(() => {
+  veranderThema(form.theme)
+})
+
 
 const saveSettings = async () => {
   isSaving.value = true
