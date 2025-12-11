@@ -7,7 +7,8 @@ import path from "path";
 import contractRoutes from "./routes/contract.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import authRoutes from "./routes/auth.routes.js";
-import preferenceRoutes from "./routes/preferences.routes.js";
+import preferenceRoutes from "./routes/preference.routes.js";
+
 
 const app = express();
 
