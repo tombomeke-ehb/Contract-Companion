@@ -9,13 +9,24 @@
 
       <form class="form" @submit.prevent="handleSignup">
         <div class="form-group">
-          <label class="label" for="signup-name">Full name</label>
+          <label class="label" for="signup-name">First name</label>
           <input
             id="signup-name"
             v-model="form.name"
             class="input"
             type="text"
-            placeholder="Jane Doe"
+            placeholder="Jane"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label class="label" for="signup-surname">Surname</label>
+          <input
+            id="signup-surname"
+            v-model="form.surname"
+            class="input"
+            type="text"
+            placeholder="Doe"
             required
           />
         </div>
@@ -82,11 +93,13 @@
 <script setup>
 import { reactive, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
+import auth from '../api/auth'
 
 const router = useRouter()
 
 const form = reactive({
   name: '',
+  surname: '',
   email: '',
   password: ''
 })
@@ -95,18 +108,22 @@ const isSubmitting = ref(false)
 const error = ref('')
 
 const handleSignup = async () => {
-  if (!form.name || !form.email || form.password.length < 8) {
-    error.value = 'Please fill in all fields (password needs 8+ characters).'
+  if (!form.name || !form.surname || !form.email || form.password.length < 8) {
+    error.value = 'Please fill in all fields (including surname, password needs 8+ characters).'
     return
   }
 
   isSubmitting.value = true
   error.value = ''
 
-  await new Promise((resolve) => setTimeout(resolve, 800))
-
-  isSubmitting.value = false
-  router.push({ name: 'dashboard' })
+  try {
+    await auth.signup(form)
+    router.push({ name: 'dashboard' })
+  } catch (err) {
+    error.value = err.message || 'Signup failed. Please try again.'
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 const continueWithGoogle = () => {
