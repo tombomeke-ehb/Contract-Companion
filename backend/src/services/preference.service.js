@@ -7,7 +7,7 @@ async function getPreferences(userId) {
   );
 
   if (result.rows.length === 0) {
-    return { theme: "light", lang: "nl" }; // this is the defaults if new account
+    return { theme: "light", lang: "nl" }; // default values for a new account
   }
 
   return result.rows[0];
@@ -27,7 +27,7 @@ async function updatePreferences(userId, theme, lang) {
     );
   } else {
     await db.query(
-      `UPDATE PREFERENCES 
+      `UPDATE PREFERENCES
        SET THEME = :theme, LANG = :lang
        WHERE ID_USER = :userId`,
       { userId, theme, lang }

@@ -1,7 +1,7 @@
 import { query } from "../config/db.js";
 
 // Service for working with contract summaries and risk scores.
-// Maps between the SAMENVATTING table and higher level objects used in controllers.
+// Maps between the SAMENVATTING (summary) table and higher level objects used in controllers.
 
 // Create a new summary row for a given document.
 export async function createSummary({ idDoc, text, riskScore }) {
@@ -15,7 +15,7 @@ export async function createSummary({ idDoc, text, riskScore }) {
     idDoc,
     text,
     riskScore,
-    outId: { dir: 3003, type: 2010 }, // oracledb.BIND_OUT / NUMBER, but we keep types abstract here
+    outId: { dir: 3003, type: 2010 }, // oracledb.BIND_OUT / NUMBER, kept abstract here
   };
 
   const result = await query(sql, binds, { autoCommit: true });

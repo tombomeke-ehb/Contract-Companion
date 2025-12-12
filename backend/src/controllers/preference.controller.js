@@ -8,7 +8,7 @@ export async function getPreferences(req, res) {
     res.json(prefs);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Kon voorkeuren niet ophalen" });
+    res.status(500).json({ error: "Could not fetch preferences" });
   }
 }
 
@@ -18,9 +18,9 @@ export async function updatePreferences(req, res) {
 
   try {
     await preferenceService.updatePreferences(userId, theme, lang);
-    res.json({ message: "Voorkeuren opgeslagen" });
+    res.json({ message: "Preferences saved" });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Kon voorkeuren niet opslaan" });
+    res.status(500).json({ error: "Could not save preferences" });
   }
 }

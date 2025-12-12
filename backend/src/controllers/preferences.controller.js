@@ -6,7 +6,7 @@ export async function getPreferencesForUser(req, res, next) {
     const prefs = await preferenceService.findByUserId(userId);
 
     if (!prefs) {
-      return res.status(404).json({ error: "Geen voorkeuren gevonden voor deze gebruiker" });
+      return res.status(404).json({ error: "No preferences found for this user" });
     }
 
     res.json(prefs);
@@ -27,7 +27,7 @@ export async function updatePreferencesForUser(req, res, next) {
       region,
     });
 
-    res.json({ message: "Preferences bijgewerkt" });
+    res.json({ message: "Preferences updated" });
   } catch (err) {
     next(err);
   }

@@ -3,8 +3,8 @@ import { query } from "../config/db.js";
 
 /**
  * findUserByEmail(email)
- * Zoeken naar een user in de database op basis van e-mail.
- * Gebruikt door auth (register/login) en admin dashboard.
+ * Find a user in the database based on email address.
+ * Used by auth (register/login) and admin dashboard.
  */
 export async function findUserByEmail(email) {
   const result = await query(
@@ -19,12 +19,12 @@ export async function findUserByEmail(email) {
 
 /**
  * createUser(name, email, hashedPassword, surname)
- * Maakt een nieuwe user aan. Gebruikt door auth (register).
+ * Creates a new user. Used by auth (register).
  */
 export async function createUser(name, email, hashedPassword, surname = null) {
   const finalSurname = surname || name;
 
-  // Bepaal nieuw ID_USER (max + 1)
+  // Determine new ID_USER (max + 1)
   const maxResult = await query(`SELECT NVL(MAX(ID_USER), 0) + 1 as NEXT_ID FROM USERS`);
   const nextId = maxResult.rows[0].NEXT_ID;
 
@@ -41,7 +41,7 @@ export async function createUser(name, email, hashedPassword, surname = null) {
       surname: finalSurname,
       email,
       password: hashedPassword,
-      isAdmin: 0, // standaard geen admin
+      isAdmin: 0, // default: not an admin
     },
     { autoCommit: true }
   );

@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3000;
 
 async function start() {
   try {
-    await db.verbinding(); // connecte l’Oracle DB
+    await db.connect(); // connect the Oracle DB
     console.log("✅ Oracle DB connected");
 
     app.listen(PORT, () => {
