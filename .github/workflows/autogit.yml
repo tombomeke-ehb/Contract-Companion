@@ -28,6 +28,8 @@ jobs:
 
       - name: Build frontend
         run: npm run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
       - name: Deploy via FTP to Combell
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
@@ -35,6 +37,6 @@ jobs:
           server: ${{ secrets.COMBELL_FTP_HOST }}
           username: ${{ secrets.COMBELL_FTP_USER }}
           password: ${{ secrets.COMBELL_FTP_PASSWORD }}
-          local-dir: frontend/dist
+          local-dir: frontend/dist/
           server-dir: ${{ secrets.COMBELL_FTP_REMOTE_DIR }}
           dangerous-clean-slate: true
