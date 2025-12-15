@@ -27,8 +27,7 @@
         <RouterLink :to="{ name: 'home' }">Features</RouterLink>
         <RouterLink :to="{ name: 'docs' }">Documentation</RouterLink>
         <RouterLink :to="{ name: 'about' }">About</RouterLink>
-        <RouterLink :to="{ name: 'login' }">Login</RouterLink>
-        <RouterLink :to="{ name: 'signup' }">Sign Up</RouterLink>
+       
       </nav>
       <nav
         :class="['nav-links', { active: menuOpen }]"
