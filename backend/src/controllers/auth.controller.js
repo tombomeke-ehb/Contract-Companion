@@ -9,22 +9,22 @@ export async function registerUser(req, res) {
     const { name, surname, email, password } = req.body;
 
     if (!name || !surname || !email || !password) {
-      return res.status(400).json({ error: "Vul alle velden in (inclusief achternaam)." });
+      return res.status(400).json({ error: "Please fill in all fields (including last name)." });
     }
 
     // Check if user already exists
     const existing = await findUserByEmail(email);
     if (existing) {
-      return res.status(400).json({ error: "Email bestaat al." });
+      return res.status(400).json({ error: "Email already exists." });
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user (surname is verplicht)
+    // Create user (surname is required)
     await createUser(name, email, hashedPassword, surname);
 
-    return res.status(201).json({ message: "Account aangemaakt." });
+    return res.status(201).json({ message: "Account created." });
 
   } catch (err) {
     console.error("REGISTER ERROR:", err);
@@ -39,13 +39,13 @@ export async function loginUser(req, res) {
 
     const user = await findUserByEmail(email);
     if (!user) {
-      return res.status(401).json({ error: "Ongeldige login." });
+      return res.status(401).json({ error: "Invalid login." });
     }
 
     // Compare hashed password
     const isValid = await bcrypt.compare(password, user.PASSWORD);
     if (!isValid) {
-      return res.status(401).json({ error: "Ongeldige login." });
+      return res.status(401).json({ error: "Invalid login." });
     }
 
     return res.json({
@@ -54,8 +54,8 @@ export async function loginUser(req, res) {
         id: user.ID_USER,
         name: user.NAME,
         email: user.EMAIL,
-        isAdmin: user.ISADMIN === 1
-      }
+        isAdmin: user.ISADMIN === 1,
+      },
     });
 
   } catch (err) {

@@ -3,22 +3,14 @@
 import express from 'express'
 import { upload } from '../middleware/upload.js'
 import { processContractPdf } from '../services/documentOCR.service.js'
+import { analyzeContract, getContracts } from '../controllers/contract.controller.js'
 
 const router = express.Router()
 
-// POST /api/contracts/upload
-// ---------------------------
-// 1. Multer (upload.single('file')) parses multipart/form-data and writes
-//    the uploaded contract PDF to disk.
-// 2. The saved file path is passed to Document AI via processContractPdf.
-// 3. The Document AI response is normalised into:
-//    - fullText: the entire document text
-//    - pages: lightweight page metadata (dimensions, counts)
-// 4. A JSON payload is returned to the frontend, which can drive
-//    the analysis/report views.
-router.post('/upload', upload.single('file'), async (req, res) => {
+// Existing low-level OCR endpoint (kept for now)
+router.post('/upload-raw', upload.single('file'), async (req, res) => {
   try {
-    console.log('[contracts] /upload called, file:', req.file?.originalname)
+    console.log('[contracts] /upload-raw called, file:', req.file?.originalname)
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' })
     }
@@ -50,5 +42,9 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     })
   }
 })
+
+// High-level API used by the frontend
+router.post('/upload', upload.single('file'), analyzeContract)
+router.get('/', getContracts)
 
 export default router
