@@ -1,14 +1,23 @@
 // backend/src/middleware/upload.js
 
 import multer from 'multer'
+import fs from 'fs'
+import path from 'path'
+
+// Ensure the upload directory exists at startup so Multer and
+// downstream services (OCR, AI) can safely access uploaded files.
+const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'contracts')
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true })
+}
 
 // Configure Multer disk storage for uploaded contract files.
 // Files are written to public/uploads/contracts so they can be
 // accessed by the backend for further processing (e.g. OCR).
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // Target folder relative to the backend project root.
-    cb(null, 'public/uploads/contracts')
+    // Use the absolute upload directory to avoid ENOENT errors.
+    cb(null, uploadDir)
   },
   filename: (req, file, cb) => {
     // Use a timestamp prefix to avoid filename collisions.

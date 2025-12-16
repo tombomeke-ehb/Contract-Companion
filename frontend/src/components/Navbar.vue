@@ -22,12 +22,8 @@
         {{ $t('nav.brand') }}
       </RouterLink>
 
-      <!-- PUBLIC NAV: only informational links on desktop -->
-      <nav
-        v-if="!isAppRoute"
-        :id="'primary-navigation'"
-        :class="['nav-links', { active: menuOpen }]"
-      >
+      <!-- PUBLIC NAV -->
+      <nav v-if="!isAuthenticated" class="nav-links">
         <RouterLink :to="{ name: 'home' }">
           {{ $t('nav.features') }}
         </RouterLink>
@@ -72,7 +68,7 @@
         <RouterLink :to="{ name: 'common-contracts' }">
           {{ $t('nav.commonContracts') }}
         </RouterLink>
-        <!-- <RouterLink :to="{ name: 'home' }">Logout</RouterLink> -->
+        <button type="button" class="link-button" @click="handleLogout">Logout</button>
       </nav>
       <!-- Actions (desktop only) -->
       <div class="nav-actions" v-if="!isMobile">
@@ -141,9 +137,17 @@ function handleLogout() {
   router.push({ name: 'home' })
 }
 onMounted(() => {
+  // Hydrate auth-state uit localStorage bij pagina-refresh
+  authStore.initFromStorage()
   window.addEventListener('resize', handleResize)
 })
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
 })
+
+const handleLogout = () => {
+  authApi.logout()
+  authStore.clearAuth()
+  router.push({ name: 'home' })
+}
 </script>
