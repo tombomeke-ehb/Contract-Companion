@@ -1,33 +1,35 @@
-// frontend/src/api/contracts.js
+import http from './httpClient'
 
-// Centralized API helpers for working with contract resources from the frontend.
-// Keeps HTTP calls in one place so components can stay focused on UI logic.
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
-import http from './httpClient';
-
-// Base path for all contract-related endpoints on the backend.
-// The full URL is: VITE_API_URL + BASE_PATH + route
-const BASE_PATH = '/api/contracts';
+// Base path for all contract-related endpoints on the backend
+const BASE_PATH = "/api/contracts";
 
 /**
  * Upload a single contract file to the backend.
- *
- * The backend route expects a multipart/form-data POST request to
- * POST /api/contracts/upload with a field named "file" that contains
- * the PDF (or other supported document type).
  *
  * @param {File} file - The contract file selected in the browser.
  * @returns {Promise<any>} Parsed JSON response from the backend.
  */
 export async function uploadContract(file) {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    throw new Error("No authentication token found");
+  }
+
   const form = new FormData();
   // Field name MUST match upload.single('file') in backend/src/middleware/upload.js
-  form.append('file', file);
+  form.append("file", file);
 
-  const res = await fetch(`${import.meta.env.VITE_API_URL}${BASE_PATH}/upload`, {
-    method: 'POST',
+  const res = await fetch(`${API_BASE_URL}${BASE_PATH}/upload`, {
+    method: "POST",
+    headers: {
+      // JWT-token meesturen voor beveiligde backend routes
+      Authorization: `Bearer ${token}`,
+    },
     body: form,
-    credentials: 'include',
+    credentials: "include",
   });
 
   if (!res.ok) {
