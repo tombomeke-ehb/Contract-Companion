@@ -173,10 +173,10 @@ const deletePerson = async (personId) => {
     await deletePersonAPI(personId)
 
     // Remove from local array
-    const index = people.findIndex(p => p.id === personId)
+    const index = people.value.findIndex(p => p.id === personId)
     if (index > -1) {
-      const deletedPerson = people[index]
-      people.splice(index, 1)
+      const deletedPerson = people.value[index]
+      people.value.splice(index, 1)
       console.log(`Deleted person: ${deletedPerson.name} (ID: ${personId})`)
     }
   } catch (error) {
