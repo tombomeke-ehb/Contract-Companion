@@ -19,6 +19,9 @@
         <button type="button" class="btn btn-outline" @click="openAddModal" style="margin-left:0.5rem;">
           + Add contract
         </button>
+        <RouterLink :to="{ name: 'admin-dashboard' }" class="btn btn-outline">
+          Back to dashboard
+        </RouterLink>
       </div>
     </header>
 
