@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { findUserByEmail, createUser } from "../services/user.service.js";
+import jwt from "jsonwebtoken";
 
 // REGISTER
 export async function registerUser(req, res) {
@@ -42,14 +43,27 @@ export async function loginUser(req, res) {
       return res.status(401).json({ error: "Invalid login." });
     }
 
-    // Compare hashed password
+    // Vergelijk het ingevoerde wachtwoord met het gehashte wachtwoord
     const isValid = await bcrypt.compare(password, user.PASSWORD);
     if (!isValid) {
       return res.status(401).json({ error: "Invalid login." });
     }
 
+    // Maak een JWT-token aan
+    const token = jwt.sign(
+      {
+        id: user.ID_USER,
+        email: user.EMAIL,
+        isAdmin: user.ISADMIN === 1,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "2h" }
+    );
+
+    // Stuur token en gebruikersinformatie terug
     return res.json({
       message: "Login success",
+      token,
       user: {
         id: user.ID_USER,
         name: user.NAME,
