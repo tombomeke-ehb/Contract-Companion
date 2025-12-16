@@ -34,12 +34,22 @@
           {{ $t('nav.about') }}
         </RouterLink>
         <!-- Login / Sign Up blijven alleen voor mobiel in de drawer -->
-        <RouterLink :to="{ name: 'login' }" class="nav-link-auth-mobile">
-          {{ $t('nav.login') }}
-        </RouterLink>
-        <RouterLink :to="{ name: 'signup' }" class="nav-link-auth-mobile">
-          {{ $t('nav.signup') }}
-        </RouterLink>
+        <template v-if="!isLoggedIn">
+          <RouterLink :to="{ name: 'login' }" class="nav-link-auth-mobile">
+            {{ $t('nav.login') }}
+          </RouterLink>
+          <RouterLink :to="{ name: 'signup' }" class="nav-link-auth-mobile">
+            {{ $t('nav.signup') }}
+          </RouterLink>
+        </template>
+        <button
+          v-else
+          type="button"
+          class="nav-link-auth-mobile"
+          @click="handleLogout"
+        >
+          {{ $t('nav.logout') }}
+        </button>
       </nav>
       <nav
         v-else
@@ -62,9 +72,14 @@
       </nav>
       <!-- Actions (desktop only) -->
       <div class="nav-actions" v-if="!isMobile">
-        <template v-if="!isAuthenticated">
-          <RouterLink :to="{ name: 'login' }" class="btn btn-outline">Login</RouterLink>
-          <RouterLink :to="{ name: 'signup' }" class="btn btn-primary">Sign Up</RouterLink>
+        <template v-if="!isAppRoute">
+          <template v-if="!isLoggedIn">
+            <RouterLink :to="{ name: 'login' }" class="btn btn-outline">Login</RouterLink>
+            <RouterLink :to="{ name: 'signup' }" class="btn btn-primary">Sign Up</RouterLink>
+          </template>
+          <button v-else type="button" class="btn btn-outline" @click="handleLogout">
+            {{ $t('nav.logout') }}
+          </button>
         </template>
         <template v-else>
           <button type="button" class="btn btn-outline" @click="handleLogout">
@@ -85,15 +100,21 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
-import authApi from '@/api/auth'
-import { useAuthStore } from '@/stores/authStore'
+import { useUserStore } from '../stores/userStore'
 
 const route = useRoute()
 const router = useRouter()
-const authStore = useAuthStore()
+const userStore = useUserStore()
 
-// Loginstatus is leidend voor welke navbar-variant we tonen
-const isAuthenticated = computed(() => authStore.isAuthenticated)
+const appRouteNames = [
+  'dashboard',
+  'upload',
+  'report-detail',
+  'settings',
+  'common-contracts'
+]
+const isAppRoute = computed(() => appRouteNames.includes(route.name))
+const isLoggedIn = computed(() => !!userStore.user)
 
 const menuOpen = ref(false)
 const isMobile = ref(window.innerWidth <= 768)
@@ -109,6 +130,11 @@ function closeMenu() {
 function handleResize() {
   isMobile.value = window.innerWidth <= 768
   if (!isMobile.value) closeMenu()
+}
+function handleLogout() {
+  userStore.logout()
+  closeMenu()
+  router.push({ name: 'home' })
 }
 onMounted(() => {
   // Hydrate auth-state uit localStorage bij pagina-refresh
