@@ -1,6 +1,20 @@
 <template>
   <header class="navbar">
     <div class="navbar-inner">
+      <!-- Hamburger menu button (mobile only) -->
+      <button
+        class="menu-toggle"
+        :class="{ active: menuOpen }"
+        @click="toggleMenu"
+        aria-label="Open menu"
+      >
+        <span class="menu-toggle-icon">
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
+      </button>
+      <!-- Brand/logo -->
       <RouterLink :to="{ name: 'home' }" class="navbar-brand">
         <span class="brand-logo">CC</span>
         {{ $t('nav.brand') }}
@@ -18,9 +32,10 @@
           {{ $t('nav.about') }}
         </RouterLink>
       </nav>
-
-      <!-- APP NAV -->
-      <nav v-else class="nav-links">
+      <nav
+        :class="['nav-links', { active: menuOpen }]"
+        v-else
+      >
         <RouterLink :to="{ name: 'dashboard' }">
           {{ $t('nav.dashboard') }}
         </RouterLink>
@@ -33,20 +48,14 @@
         <RouterLink :to="{ name: 'common-contracts' }">
           {{ $t('nav.commonContracts') }}
         </RouterLink>
+        <RouterLink :to="{ name: 'home' }">Logout</RouterLink>
       </nav>
-
-      <div class="nav-actions">
-        <!-- PUBLIC ACTIONS -->
+      <!-- Actions (desktop only) -->
+      <div class="nav-actions" v-if="!isMobile">
         <template v-if="!isAppRoute">
-          <RouterLink :to="{ name: 'login' }" class="btn btn-outline">
-            {{ $t('nav.login') }}
-          </RouterLink>
-          <RouterLink :to="{ name: 'signup' }" class="btn btn-primary">
-            {{ $t('nav.signup') }}
-          </RouterLink>
+          <RouterLink :to="{ name: 'login' }" class="btn btn-outline">Login</RouterLink>
+          <RouterLink :to="{ name: 'signup' }" class="btn btn-primary">Sign Up</RouterLink>
         </template>
-
-        <!-- APP ACTIONS -->
         <template v-else>
           <RouterLink :to="{ name: 'home' }" class="btn btn-outline">
             {{ $t('nav.logout') }}
@@ -54,16 +63,20 @@
         </template>
       </div>
     </div>
+    <!-- Overlay -->
+    <div
+      class="nav-overlay"
+      :class="{ active: menuOpen }"
+      @click="closeMenu"
+    ></div>
   </header>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 
 const route = useRoute()
-
-// Detect if current route is an app route for navigation
 const appRouteNames = [
   'dashboard',
   'upload',
@@ -71,6 +84,27 @@ const appRouteNames = [
   'settings',
   'common-contracts'
 ]
-
 const isAppRoute = computed(() => appRouteNames.includes(route.name))
+
+const menuOpen = ref(false)
+const isMobile = ref(window.innerWidth <= 768)
+
+function toggleMenu() {
+  menuOpen.value = !menuOpen.value
+  document.body.classList.toggle('menu-open', menuOpen.value)
+}
+function closeMenu() {
+  menuOpen.value = false
+  document.body.classList.remove('menu-open')
+}
+function handleResize() {
+  isMobile.value = window.innerWidth <= 768
+  if (!isMobile.value) closeMenu()
+}
+onMounted(() => {
+  window.addEventListener('resize', handleResize)
+})
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+})
 </script>
