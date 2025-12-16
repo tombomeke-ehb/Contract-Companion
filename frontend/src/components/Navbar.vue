@@ -6,7 +6,9 @@
         class="menu-toggle"
         :class="{ active: menuOpen }"
         @click="toggleMenu"
-        aria-label="Open menu"
+        :aria-expanded="menuOpen.toString()"
+        aria-controls="primary-navigation"
+        :aria-label="menuOpen ? $t('nav.closeMenu') : $t('nav.openMenu')"
       >
         <span class="menu-toggle-icon">
           <span></span>
@@ -20,8 +22,12 @@
         {{ $t('nav.brand') }}
       </RouterLink>
 
-      <!-- PUBLIC NAV -->
-      <nav v-if="!isAppRoute" class="nav-links">
+      <!-- PUBLIC NAV: only informational links on desktop -->
+      <nav
+        v-if="!isAppRoute"
+        :id="'primary-navigation'"
+        :class="['nav-links', { active: menuOpen }]"
+      >
         <RouterLink :to="{ name: 'home' }">
           {{ $t('nav.features') }}
         </RouterLink>
@@ -31,10 +37,18 @@
         <RouterLink :to="{ name: 'about' }">
           {{ $t('nav.about') }}
         </RouterLink>
+        <!-- Login / Sign Up blijven alleen voor mobiel in de drawer -->
+        <RouterLink :to="{ name: 'login' }" class="nav-link-auth-mobile">
+          {{ $t('nav.login') }}
+        </RouterLink>
+        <RouterLink :to="{ name: 'signup' }" class="nav-link-auth-mobile">
+          {{ $t('nav.signup') }}
+        </RouterLink>
       </nav>
       <nav
-        :class="['nav-links', { active: menuOpen }]"
         v-else
+        :id="'primary-navigation'"
+        :class="['nav-links', { active: menuOpen }]"
       >
         <RouterLink :to="{ name: 'dashboard' }">
           {{ $t('nav.dashboard') }}
@@ -48,7 +62,7 @@
         <RouterLink :to="{ name: 'common-contracts' }">
           {{ $t('nav.commonContracts') }}
         </RouterLink>
-        <RouterLink :to="{ name: 'home' }">Logout</RouterLink>
+        <!-- <RouterLink :to="{ name: 'home' }">Logout</RouterLink> -->
       </nav>
       <!-- Actions (desktop only) -->
       <div class="nav-actions" v-if="!isMobile">
