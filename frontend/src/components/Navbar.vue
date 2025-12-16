@@ -22,12 +22,8 @@
         {{ $t('nav.brand') }}
       </RouterLink>
 
-      <!-- PUBLIC NAV: only informational links on desktop -->
-      <nav
-        v-if="!isAppRoute"
-        :id="'primary-navigation'"
-        :class="['nav-links', { active: menuOpen }]"
-      >
+      <!-- PUBLIC NAV -->
+      <nav v-if="!isAuthenticated" class="nav-links">
         <RouterLink :to="{ name: 'home' }">
           {{ $t('nav.features') }}
         </RouterLink>
@@ -62,18 +58,18 @@
         <RouterLink :to="{ name: 'common-contracts' }">
           {{ $t('nav.commonContracts') }}
         </RouterLink>
-        <!-- <RouterLink :to="{ name: 'home' }">Logout</RouterLink> -->
+        <button type="button" class="link-button" @click="handleLogout">Logout</button>
       </nav>
       <!-- Actions (desktop only) -->
       <div class="nav-actions" v-if="!isMobile">
-        <template v-if="!isAppRoute">
+        <template v-if="!isAuthenticated">
           <RouterLink :to="{ name: 'login' }" class="btn btn-outline">Login</RouterLink>
           <RouterLink :to="{ name: 'signup' }" class="btn btn-primary">Sign Up</RouterLink>
         </template>
         <template v-else>
-          <RouterLink :to="{ name: 'home' }" class="btn btn-outline">
+          <button type="button" class="btn btn-outline" @click="handleLogout">
             {{ $t('nav.logout') }}
-          </RouterLink>
+          </button>
         </template>
       </div>
     </div>
@@ -88,17 +84,16 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRoute, RouterLink } from 'vue-router'
+import { useRoute, useRouter, RouterLink } from 'vue-router'
+import authApi from '@/api/auth'
+import { useAuthStore } from '@/stores/authStore'
 
 const route = useRoute()
-const appRouteNames = [
-  'dashboard',
-  'upload',
-  'report-detail',
-  'settings',
-  'common-contracts'
-]
-const isAppRoute = computed(() => appRouteNames.includes(route.name))
+const router = useRouter()
+const authStore = useAuthStore()
+
+// Loginstatus is leidend voor welke navbar-variant we tonen
+const isAuthenticated = computed(() => authStore.isAuthenticated)
 
 const menuOpen = ref(false)
 const isMobile = ref(window.innerWidth <= 768)
@@ -116,9 +111,17 @@ function handleResize() {
   if (!isMobile.value) closeMenu()
 }
 onMounted(() => {
+  // Hydrate auth-state uit localStorage bij pagina-refresh
+  authStore.initFromStorage()
   window.addEventListener('resize', handleResize)
 })
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
 })
+
+const handleLogout = () => {
+  authApi.logout()
+  authStore.clearAuth()
+  router.push({ name: 'home' })
+}
 </script>
