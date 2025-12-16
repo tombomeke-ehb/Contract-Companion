@@ -16,12 +16,12 @@ import { RouterView } from 'vue-router'
 import { onMounted } from 'vue'
 import Navbar from './components/Navbar.vue'
 import Footer from './components/Footer.vue'
-import { useUserStore } from './stores/userStore'
+import { useAuthStore } from './stores/authStore'
 
-const userStore = useUserStore()
+const authStore = useAuthStore()
 
-// Load user from localStorage on app mount
+// Load auth state (token + user) from localStorage on app mount
 onMounted(() => {
-  userStore.loadFromStorage()
+  authStore.initFromStorage()
 })
 </script>
