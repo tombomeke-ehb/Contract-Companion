@@ -10,7 +10,12 @@
             Take a look at this...
           </p>
         </div>
-        <button @click="showModal = true" class="btn btn-primary">+ Add new Person</button>
+        <div style="display:flex; gap:0.5rem;">
+          <button @click="showModal = true" class="btn btn-primary">+ Add new Person</button>
+          <RouterLink :to="{ name: 'admin-common-contracts' }" class="btn btn-outline">
+            Manage contracts
+          </RouterLink>
+        </div>
       </div>
     </div>
 
@@ -86,11 +91,12 @@
 
 <script setup>
 import { ref, computed, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, RouterLink } from 'vue-router'
 import { deletePerson as deletePersonAPI, createPerson as createPersonAPI, getPeople as getPeopleAPI } from '../api/people'
 
 const people = ref([])
 const sortFilter = ref('all')
+const router = useRouter()
 
 const filteredReports = computed(() => {
   const list = [...people.value]
@@ -117,7 +123,6 @@ const badgeClass = (risk) => {
   return 'badge-low'
 }
 
-const router = useRouter()
 function goToReport(id) {
   router.push({ name: 'report-detail', params: { id } })
 }
