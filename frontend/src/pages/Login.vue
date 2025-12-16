@@ -1,8 +1,6 @@
-<!--frontend/src/pages/Login.vue-->
-
 <template>
-  <section class="container" style="max-width: 500px">
-    <div class="card" style="margin-bottom:2rem;">
+  <section class="container" style="max-width: 500px; margin-top: 4rem;">
+    <div class="card">
       <h1 class="section-title">Welcome Back</h1>
       <p class="section-subtitle">
         Sign in to your Contract Companion account.
@@ -10,9 +8,8 @@
 
       <form class="form" @submit.prevent="onLogin">
         <div class="form-group">
-          <label class="label" for="email">Email Address</label>
+          <label class="label">Email Address</label>
           <input
-            id="email"
             class="input"
             type="email"
             placeholder="you@example.com"
@@ -22,9 +19,8 @@
         </div>
 
         <div class="form-group">
-          <label class="label" for="password">Password</label>
+          <label class="label">Password</label>
           <input
-            id="password"
             class="input"
             type="password"
             placeholder="Enter your password"
@@ -33,22 +29,13 @@
           />
         </div>
 
-        <button type="submit" class="btn btn-primary" style="width: 100%; margin-bottom:0.5rem;">
+        <button class="btn btn-primary" style="width:100%">
           Sign In
         </button>
 
-        <button
-          type="button"
-          class="btn btn-outline"
-          style="width: 100%; margin-bottom:0.5rem;"
-          @click="onLoginWithGoogle"
-        >
-          Continue with Google
-        </button>
-
-        <p class="section-subtitle" style="text-align: center; margin-top: 0.5rem">
-          Don't have an account?
-          <RouterLink :to="{ name: 'signup' }">Create one here</RouterLink>
+        <p style="text-align:center; margin-top:1rem">
+          Don’t have an account?
+          <RouterLink to="/signup">Create one</RouterLink>
         </p>
       </form>
     </div>
@@ -58,18 +45,26 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
+import authApi from '@/api/auth'
 
 const router = useRouter()
+
 const email = ref('')
 const password = ref('')
 
-const onLogin = () => {
-  // Mock login - navigate to dashboard
-  router.push({ name: 'dashboard' })
-}
+const onLogin = async () => {
+  try {
+    await authApi.login({
+      email: email.value,
+      password: password.value
+    })
 
-const onLoginWithGoogle = () => {
-  // Mock Google login
-  router.push({ name: 'dashboard' })
+    router.push({ name: 'dashboard' })
+  } catch (err) {
+    alert(
+      err.response?.data?.error ||
+      'Invalid email or password'
+    )
+  }
 }
 </script>
