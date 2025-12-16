@@ -94,8 +94,6 @@
 
 <script setup>
 import { reactive, ref, watch, onMounted } from 'vue'
-
-import { reactive, ref, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import axios from 'axios'
 
@@ -103,7 +101,7 @@ const { locale, t } = useI18n()
 
 // tijdelijk hardcoded; later uit login halen
 const userId = 1
-//dit stuk hardcoded later eruit halen
+
 const defaultForm = {
   language: 'English',
   theme: 'Light',
@@ -138,33 +136,25 @@ const notificationLabels = {
 const isSaving = ref(false)
 const status = ref('')
 
-
-const mapUiToCode = (languageLabel) => {
-  return languageLabel === 'Nederlands' ? 'nl' : 'en'
+const veranderThema = (theme) => {
+  const html = document.documentElement
+  if (theme === 'Dark') {
+    html.classList.add('theme-dark')
+  } else {
+    html.classList.remove('theme-dark')
+  }
 }
 
-const mapCodeToUi = (langCode) => {
-  return langCode === 'nl' ? 'Nederlands' : 'English'
-}
+const mapUiToCode = (languageLabel) => (languageLabel === 'Nederlands' ? 'nl' : 'en')
+const mapCodeToUi = (langCode) => (langCode === 'nl' ? 'Nederlands' : 'English')
 
 const veranderTaal = (languageLabel) => {
-  const code = mapUiToCode(languageLabel)
-  locale.value = code
+  locale.value = mapUiToCode(languageLabel)
 }
 
-watch(
-  () => form.theme,
-  (newTheme) => {
-    veranderThema(newTheme)
-  }
-)
 
-watch(
-  () => form.language,
-  (newLanguageLabel) => {
-    veranderTaal(newLanguageLabel)
-  }
-)
+watch(() => form.theme, (newTheme) => veranderThema(newTheme))
+watch(() => form.language, (newLanguageLabel) => veranderTaal(newLanguageLabel))
 
 onMounted(async () => {
   try {
@@ -173,46 +163,28 @@ onMounted(async () => {
     form.theme = data.THEME || 'Light'
     form.language = mapCodeToUi(data.LANG || 'en')
     form.region = data.REGION || 'Belgium'
-    veranderThema(form.theme)
-    veranderTaal(form.language)
+
   } catch (err) {
     console.error('Kon preferences niet laden', err)
-
-    veranderThema(form.theme)
-    veranderTaal(form.language)
   }
-})
 
+  // Altijd toepassen, ook als load faalt
+  veranderThema(form.theme)
+  veranderTaal(form.language)
+})
 
 const resetSettings = () => {
   Object.assign(form, defaultForm)
+
   notifications.productNews = true
   notifications.weeklyDigest = false
   notifications.riskAlerts = true
+
   status.value = ''
 
   veranderThema(form.theme)
   veranderTaal(form.language)
 }
-const veranderThema=(thema)=>{
-  const html =document.documentElement
-  if(thema==='Dark'){
-    html.classList.add('theme-dark');
-  }else{
-    html.classList.remove('theme-dark');
-  };
-};
-
-watch(
-  () => form.theme,
-  (newTheme) => {
-    veranderThema(newTheme)
-  }
-)
-onMounted(() => {
-  veranderThema(form.theme)
-})
-
 
 const saveSettings = async () => {
   isSaving.value = true
@@ -229,7 +201,7 @@ const saveSettings = async () => {
     status.value = t('settings.savedStatus')
   } catch (err) {
     console.error(err)
-    status.value = 'Er ging iets mis bij het opslaan.'
+    status.value = t('settings.saveError')
   } finally {
     isSaving.value = false
   }
