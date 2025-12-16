@@ -171,7 +171,14 @@ const addPerson = async () => {
 const deletePerson = async (personId) => {
   try {
     await deletePersonAPI(personId)
-    people.value = people.value.filter(p => p.id !== personId)
+
+    // Remove from local array
+    const index = people.findIndex(p => p.id === personId)
+    if (index > -1) {
+      const deletedPerson = people[index]
+      people.splice(index, 1)
+      console.log(`Deleted person: ${deletedPerson.name} (ID: ${personId})`)
+    }
   } catch (error) {
     console.error('Failed to delete person:', error)
     alert('Error deleting user. Please try again.')
