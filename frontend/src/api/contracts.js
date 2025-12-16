@@ -47,3 +47,20 @@ export async function uploadContract(file) {
 export async function getContracts() {
   return http.get(BASE_PATH);
 }
+
+// Admin common contracts CRUD
+export async function getCommonContracts() {
+  return http.get(`${BASE_PATH}/common`);
+}
+
+export async function createCommonContract(payload) {
+  return http.post(`${BASE_PATH}/common`, payload);
+}
+
+export async function updateCommonContract(id, payload) {
+  return http.put(`${BASE_PATH}/common/${encodeURIComponent(id)}`, payload);
+}
+
+export async function deleteCommonContract(id) {
+  return http.del(`${BASE_PATH}/common/${encodeURIComponent(id)}`);
+}
