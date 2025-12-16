@@ -3,7 +3,7 @@
 import express from 'express'
 import { upload } from '../middleware/upload.js'
 import { processContractPdf } from '../services/documentOCR.service.js'
-import { analyzeContract, getContracts } from '../controllers/contract.controller.js'
+import { analyzeContract, getContracts, getCommonContracts, createCommonContract, updateCommonContract, deleteCommonContract } from '../controllers/contract.controller.js'
 
 const router = express.Router()
 
@@ -46,5 +46,11 @@ router.post('/upload-raw', upload.single('file'), async (req, res) => {
 // High-level API used by the frontend
 router.post('/upload', upload.single('file'), analyzeContract)
 router.get('/', getContracts)
+
+// Admin-manageable "common contracts" library
+router.get('/common', getCommonContracts)
+router.post('/common', createCommonContract)
+router.put('/common/:id', updateCommonContract)
+router.delete('/common/:id', deleteCommonContract)
 
 export default router
