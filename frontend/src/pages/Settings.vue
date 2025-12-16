@@ -94,8 +94,6 @@
 
 <script setup>
 import { reactive, ref, watch, onMounted } from 'vue'
-
-import { reactive, ref, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import axios from 'axios'
 
@@ -203,15 +201,6 @@ const veranderThema=(thema)=>{
   };
 };
 
-watch(
-  () => form.theme,
-  (newTheme) => {
-    veranderThema(newTheme)
-  }
-)
-onMounted(() => {
-  veranderThema(form.theme)
-})
 
 
 const saveSettings = async () => {
