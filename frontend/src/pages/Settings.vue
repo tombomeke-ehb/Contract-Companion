@@ -185,16 +185,6 @@ const resetSettings = () => {
   veranderThema(form.theme)
   veranderTaal(form.language)
 }
-const veranderThema=(thema)=>{
-  const html =document.documentElement
-  if(thema==='Dark'){
-    html.classList.add('theme-dark');
-  }else{
-    html.classList.remove('theme-dark');
-  };
-};
-
-
 
 const saveSettings = async () => {
   isSaving.value = true
