@@ -31,14 +31,6 @@
               <option value="Dark">{{ $t('settings.themeDark') }}</option>
             </select>
           </div>
-          <div class="form-group">
-            <label class="label" for="region">{{ $t('settings.region') }}</label>
-            <select id="region" v-model="form.region" class="select">
-              <option value="Belgium">{{ $t('settings.regionBelgium') }}</option>
-              <option value="Netherlands">{{ $t('settings.regionNetherlands') }}</option>
-              <option value="Germany">{{ $t('settings.regionGermany') }}</option>
-            </select>
-          </div>
         </form>
       </article>
 
@@ -106,7 +98,6 @@ const userId = 1
 const STORAGE_KEYS = {
   theme: 'cc_theme',
   language: 'cc_language', // stores lang code: 'en' | 'nl'
-  region: 'cc_region',
   twoFactor: 'cc_twoFactor',
   sessionTimeout: 'cc_sessionTimeout'
 }
@@ -114,7 +105,6 @@ const STORAGE_KEYS = {
 const defaultForm = {
   language: 'English',
   theme: 'Light',
-  region: 'Belgium',
   twoFactor: 'Email',
   sessionTimeout: '30'
 }
@@ -166,7 +156,6 @@ function loadFromStorage() {
   try {
     const storedTheme = localStorage.getItem(STORAGE_KEYS.theme)
     const storedLangCode = localStorage.getItem(STORAGE_KEYS.language)
-    const storedRegion = localStorage.getItem(STORAGE_KEYS.region)
     const storedTwoFactor = localStorage.getItem(STORAGE_KEYS.twoFactor)
     const storedSession = localStorage.getItem(STORAGE_KEYS.sessionTimeout)
 
@@ -175,9 +164,6 @@ function loadFromStorage() {
     }
     if (storedLangCode === 'en' || storedLangCode === 'nl') {
       form.language = mapCodeToUi(storedLangCode)
-    }
-    if (storedRegion) {
-      form.region = storedRegion
     }
     if (storedTwoFactor) {
       form.twoFactor = storedTwoFactor
@@ -194,7 +180,6 @@ function saveToStorage() {
   try {
     localStorage.setItem(STORAGE_KEYS.theme, form.theme)
     localStorage.setItem(STORAGE_KEYS.language, mapUiToCode(form.language))
-    localStorage.setItem(STORAGE_KEYS.region, form.region)
     localStorage.setItem(STORAGE_KEYS.twoFactor, form.twoFactor)
     localStorage.setItem(STORAGE_KEYS.sessionTimeout, form.sessionTimeout)
   } catch (e) {
@@ -233,12 +218,6 @@ onMounted(async () => {
     if (data.LANG) {
       form.language = mapCodeToUi(data.LANG)
     }
-    if (data.REGION) {
-      form.region = data.REGION
-    }
-    // Optioneel: future backend fields
-    // if (data.TWO_FACTOR) form.twoFactor = data.TWO_FACTOR
-    // if (data.SESSION_TIMEOUT) form.sessionTimeout = String(data.SESSION_TIMEOUT)
 
     // Na het binnenhalen van backend-waarden: toepassen + cachen in localStorage
     veranderThema(form.theme)
@@ -270,9 +249,7 @@ const saveSettings = async () => {
 
   const payload = {
     theme: form.theme,
-    language: mapUiToCode(form.language),
-    region: form.region
-    // hier kun je later twoFactor en sessionTimeout mee opslaan als backend dat ondersteunt
+    language: mapUiToCode(form.language)
   }
 
   try {
