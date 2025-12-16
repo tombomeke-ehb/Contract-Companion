@@ -62,7 +62,7 @@
         <RouterLink :to="{ name: 'common-contracts' }">
           {{ $t('nav.commonContracts') }}
         </RouterLink>
-        <RouterLink :to="{ name: 'home' }">Logout</RouterLink>
+        <!-- <RouterLink :to="{ name: 'home' }">Logout</RouterLink> -->
       </nav>
       <!-- Actions (desktop only) -->
       <div class="nav-actions" v-if="!isMobile">
