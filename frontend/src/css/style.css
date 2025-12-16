@@ -409,7 +409,8 @@ html.theme-dark .menu-toggle-icon span {
 
 .hero {
   display: grid;
-  grid-template-columns: 1fr; /* was 1.3fr 1fr, now always single column */
+  grid-template-columns: 1fr;
+  /* was 1.3fr 1fr, now always single column */
   gap: 4rem;
   align-items: center;
   margin-bottom: 4rem;
@@ -1352,16 +1353,16 @@ html.theme-dark .label {
   transition: transform 0.22s cubic-bezier(0.22, 0.61, 0.36, 1), background-color 0.2s ease;
 }
 
-.switch input:checked + .switch-indicator {
+.switch input:checked+.switch-indicator {
   background-color: rgba(34, 197, 94, 0.9);
 }
 
-.switch input:checked + .switch-indicator::before {
+.switch input:checked+.switch-indicator::before {
   transform: translateX(18px);
   background-color: #bbf7d0;
 }
 
-.switch input:focus-visible + .switch-indicator {
+.switch input:focus-visible+.switch-indicator {
   box-shadow: 0 0 0 2px #020617, 0 0 0 4px rgba(34, 197, 94, 0.95);
   outline: none;
 }
@@ -1402,11 +1403,11 @@ html.theme-dark a:focus-visible {
 }
 
 /* Notification texts */
-html.theme-dark .toggle-row > div strong {
+html.theme-dark .toggle-row>div strong {
   color: #f9fafb;
 }
 
-html.theme-dark .toggle-row > div .card-subtitle {
+html.theme-dark .toggle-row>div .card-subtitle {
   color: #9ca3af;
 }
 
