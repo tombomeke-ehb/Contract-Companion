@@ -1,9 +1,9 @@
 // backend/src/controllers/contract.controller.js
 
-// Placeholder AI service - later you can replace the implementation
-import AI from "../services/ai.service.js";
 import { processContractPdf } from "../services/documentOCR.service.js";
 import { createSummary } from "../services/contract.service.js";
+import { analyzeContractText } from "../services/ai-orchestrator.service.js";
+import { mapLlm2ToReport } from "../services/report-mapper.service.js";
 
 // Handle upload + OCR + AI analysis and prepare persistence
 export async function analyzeContract(req, res) {
@@ -18,21 +18,23 @@ export async function analyzeContract(req, res) {
     const document = await processContractPdf(filePath);
     const fullText = document.text || "";
 
-    // 2. Run (future) AI model on the OCR text
-    const aiResult = await AI.analyzeContract(filePath, fullText);
+    // 2. Run new two-stage AI pipeline on the OCR text
+    const aiResult = await analyzeContractText(fullText);
 
-    // 3. Prepare persistence into SAMENVATTING table (future-proof)
-    const riskScore = aiResult?.riskScore ?? 5.0; // default placeholder score
-
-    // For now we don't have a real DOCUMENTEN.ID_DOC flow yet
+    // 3. Extract risk score from LLM2 for persistence
+    const riskScore = aiResult?.llm2?.overallRiskScore ?? 5.0;
     await createSummary({ idDoc: null, text: fullText, riskScore });
 
-    // 4. Respond to the frontend with all building blocks
+    // 4. Map LLM2 output to a report shape expected by the frontend
+    const report = mapLlm2ToReport(aiResult.llm2, null);
+
+    // 5. Respond to the frontend with all building blocks
     res.json({
       success: true,
       file: filePath,
       ocrText: fullText,
       ai: aiResult,
+      report,
     });
   } catch (err) {
     console.error("analyzeContract failed", err);
