@@ -46,20 +46,27 @@
 import { ref } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import authApi from '@/api/auth'
+import { useUserStore } from '@/stores/userStore'
 
 const router = useRouter()
+const userStore = useUserStore()
 
 const email = ref('')
 const password = ref('')
 
 const onLogin = async () => {
   try {
-    await authApi.login({
+    const response = await authApi.login({
       email: email.value,
       password: password.value
     })
 
-    router.push({ name: 'dashboard' })
+    // Store user data in the store
+    userStore.setUser(response.user)
+
+    // Redirect to admin dashboard if admin, else regular dashboard
+    const redirectName = response.user.isAdmin ? 'admin-dashboard' : 'dashboard'
+    router.push({ name: redirectName })
   } catch (err) {
     alert(
       err.response?.data?.error ||
