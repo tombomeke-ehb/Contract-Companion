@@ -45,7 +45,9 @@
         <RouterLink :to="{ name: 'settings' }">
           {{ $t('nav.settings') }}
         </RouterLink>
-        <RouterLink :to="{ name: 'common-contracts' }">{{ $t('nav.commonContracts</RouterLink>') }}
+        <RouterLink :to="{ name: 'common-contracts' }">
+          {{ $t('nav.commonContracts') }}
+        </RouterLink>
         <RouterLink :to="{ name: 'home' }">Logout</RouterLink>
       </nav>
       <!-- Actions (desktop only) -->
