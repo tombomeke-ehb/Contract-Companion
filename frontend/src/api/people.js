@@ -19,8 +19,7 @@ const BASE_PATH = '/api/people'
  * @returns {Promise<any>} Response from the backend
  */
 export async function deletePerson(personId) {
-  const res = await http.delete(`${BASE_PATH}/${personId}`)
-  return res.data
+  return await http.del(`${BASE_PATH}/${personId}`)
 }
 
 /**
@@ -32,8 +31,7 @@ export async function deletePerson(personId) {
  * @returns {Promise<any>} Array of people objects
  */
 export async function getPeople() {
-  const res = await http.get(BASE_PATH)
-  return res.data
+  return await http.get(BASE_PATH)
 }
 
 /**
@@ -54,6 +52,5 @@ export async function getPeople() {
  * @returns {Promise<any>} Created person object with ID
  */
 export async function createPerson(personData) {
-  const res = await http.post(BASE_PATH, personData)
-  return res.data
+  return await http.post(BASE_PATH, personData)
 }
