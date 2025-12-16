@@ -96,7 +96,8 @@ const appRouteNames = [
   'upload',
   'report-detail',
   'settings',
-  'common-contracts'
+  'common-contracts',
+  'admin-dashboard'
 ]
 const isAppRoute = computed(() => appRouteNames.includes(route.name))
 

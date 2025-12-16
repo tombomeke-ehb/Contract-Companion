@@ -689,15 +689,15 @@ html.theme-dark .textarea:focus {
 }
 
 .badge-high {
-  background-color: #fee2e2;
-  color: #b91c1c;
-  border: 1px solid #fecaca;
+  background-color: rgba(248, 113, 113, 0.18); /* zachtere roodtint */
+  color: #fecaca; /* lichtere tekst op dark bg */
+  border: 1px solid rgba(248, 113, 113, 0.6);
 }
 
 .badge-medium {
-  background-color: #ffedd5;
-  color: #c2410c;
-  border: 1px solid #fed7aa;
+  background-color: rgba(251, 191, 36, 0.16); /* zachtere oranje/geel tint */
+  color: #fde68a;
+  border: 1px solid rgba(251, 191, 36, 0.6);
 }
 
 .badge-low {
