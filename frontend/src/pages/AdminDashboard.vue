@@ -214,7 +214,7 @@ const deletePerson = async (personId) => {
   try {
     // Call the API to delete from database
     await deletePersonAPI(personId)
-    
+
     // Remove from local array
     const index = people.findIndex(p => p.id === personId)
     if (index > -1) {
