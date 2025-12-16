@@ -35,6 +35,7 @@ const routes = [
   { path: '/terms', name: 'terms', component: Terms },
   { path: '/contact', name: 'contact', component: Contact },
   { path: '/security', name: 'security', component: Security },
+  { path: '/admin', name: 'admin-dashboard', component: () => import('../pages/AdminDashboard.vue') },
 ]
 
 const router = createRouter({

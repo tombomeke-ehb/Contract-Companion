@@ -17,26 +17,35 @@
       <!-- Brand/logo -->
       <RouterLink :to="{ name: 'home' }" class="navbar-brand">
         <span class="brand-logo">CC</span>
-        Contract Companion
+        {{ $t('nav.brand') }}
       </RouterLink>
-      <!-- Navigation links -->
-      <nav
-        :class="['nav-links', { active: menuOpen }]"
-        v-if="!isAppRoute"
-      >
-        <RouterLink :to="{ name: 'home' }">Features</RouterLink>
-        <RouterLink :to="{ name: 'docs' }">Documentation</RouterLink>
-        <RouterLink :to="{ name: 'about' }">About</RouterLink>
-       
+
+      <!-- PUBLIC NAV -->
+      <nav v-if="!isAppRoute" class="nav-links">
+        <RouterLink :to="{ name: 'home' }">
+          {{ $t('nav.features') }}
+        </RouterLink>
+        <RouterLink :to="{ name: 'docs' }">
+          {{ $t('nav.docs') }}
+        </RouterLink>
+        <RouterLink :to="{ name: 'about' }">
+          {{ $t('nav.about') }}
+        </RouterLink>
       </nav>
       <nav
         :class="['nav-links', { active: menuOpen }]"
         v-else
       >
-        <RouterLink :to="{ name: 'dashboard' }">Dashboard</RouterLink>
-        <RouterLink :to="{ name: 'upload' }">Upload</RouterLink>
-        <RouterLink :to="{ name: 'settings' }">Settings</RouterLink>
-        <RouterLink :to="{ name: 'common-contracts' }">Common Contracts</RouterLink>
+        <RouterLink :to="{ name: 'dashboard' }">
+          {{ $t('nav.dashboard') }}
+        </RouterLink>
+        <RouterLink :to="{ name: 'upload' }">
+          {{ $t('nav.upload') }}
+        </RouterLink>
+        <RouterLink :to="{ name: 'settings' }">
+          {{ $t('nav.settings') }}
+        </RouterLink>
+        <RouterLink :to="{ name: 'common-contracts' }">{{ $t('nav.commonContracts</RouterLink>') }}
         <RouterLink :to="{ name: 'home' }">Logout</RouterLink>
       </nav>
       <!-- Actions (desktop only) -->
@@ -46,7 +55,9 @@
           <RouterLink :to="{ name: 'signup' }" class="btn btn-primary">Sign Up</RouterLink>
         </template>
         <template v-else>
-          <RouterLink :to="{ name: 'home' }" class="btn btn-outline">Logout</RouterLink>
+          <RouterLink :to="{ name: 'home' }" class="btn btn-outline">
+            {{ $t('nav.logout') }}
+          </RouterLink>
         </template>
       </div>
     </div>

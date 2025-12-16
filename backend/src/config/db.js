@@ -3,7 +3,7 @@
 import oracledb from "oracledb";
 
 // Create Oracle connection pool using environment variables
-async function verbinding() {
+async function connect() {
   await oracledb.createPool({
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
@@ -14,7 +14,7 @@ async function verbinding() {
 }
 
 // Gracefully close the connection pool
-async function close() {
+async function closePool() {
   const pool = oracledb.getPool();
   if (pool) {
     await pool.close(0); // 0 means close immediately
@@ -41,4 +41,5 @@ async function query(sql, bindParams = [], options = {}) {
   }
 }
 
-export { verbinding, close, query };
+export { connect, closePool, query };
+export default { connect, closePool, query };
