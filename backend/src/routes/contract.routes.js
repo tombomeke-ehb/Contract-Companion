@@ -15,7 +15,11 @@ import {
 
 const router = express.Router();
 
-// Alle contract-routes vereisen een ingelogde gebruiker
+// PUBLIEKE ROUTES (geen authenticatie vereist)
+// Common contracts library - beschikbaar voor iedereen
+router.get("/common", getCommonContracts);
+
+// BEVEILIGDE ROUTES (vanaf hier authenticate vereist)
 router.use(authenticate);
 
 // Upload + analyse van een contract (user + admin)
@@ -61,8 +65,7 @@ router.post("/upload-raw", upload.single("file"), async (req, res) => {
 // Admin ziet alles, user ziet enkel zijn eigen (placeholder)
 router.get("/", getContracts);
 
-// Admin-manageable "common contracts" library (admin only)
-router.get("/common", isAdmin, getCommonContracts);
+// Admin-manageable "common contracts" library (admin only voor beheer)
 router.post("/common", isAdmin, createCommonContract);
 router.put("/common/:id", isAdmin, updateCommonContract);
 router.delete("/common/:id", isAdmin, deleteCommonContract);
