@@ -16,6 +16,8 @@ pids
 # Dependency directories
 node_modules/
 package-lock.json
+**/package-lock.json
+*package-lock*
 
 # System files
 .DS_Store
