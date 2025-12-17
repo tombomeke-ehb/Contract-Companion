@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { findUserByEmail, createUser } from "../services/user.service.js";
+import jwt from "jsonwebtoken";
 
 // REGISTER
 export async function registerUser(req, res) {
@@ -24,7 +25,32 @@ export async function registerUser(req, res) {
     // Create user (surname is required)
     await createUser(name, email, hashedPassword, surname);
 
-    return res.status(201).json({ message: "Account created." });
+    // Fetch the newly created user to get the ID
+    const newUser = await findUserByEmail(email);
+
+    // Create JWT token for auto-login
+    const token = jwt.sign(
+      {
+        id: newUser.ID_USER,
+        email: newUser.EMAIL,
+        isAdmin: newUser.ISADMIN === 1,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "2h" }
+    );
+
+    // Return token and user info (auto-login after registration)
+    return res.status(201).json({
+      message: "Account created.",
+      token,
+      user: {
+        id: newUser.ID_USER,
+        name: newUser.NAME,
+        surname: newUser.SURNAME,
+        email: newUser.EMAIL,
+        isAdmin: newUser.ISADMIN === 1,
+      },
+    });
 
   } catch (err) {
     console.error("REGISTER ERROR:", err);
@@ -42,17 +68,31 @@ export async function loginUser(req, res) {
       return res.status(401).json({ error: "Invalid login." });
     }
 
-    // Compare hashed password
+    // Vergelijk het ingevoerde wachtwoord met het gehashte wachtwoord
     const isValid = await bcrypt.compare(password, user.PASSWORD);
     if (!isValid) {
       return res.status(401).json({ error: "Invalid login." });
     }
 
+    // Maak een JWT-token aan
+    const token = jwt.sign(
+      {
+        id: user.ID_USER,
+        email: user.EMAIL,
+        isAdmin: user.ISADMIN === 1,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "2h" }
+    );
+
+    // Stuur token en gebruikersinformatie terug
     return res.json({
       message: "Login success",
+      token,
       user: {
         id: user.ID_USER,
         name: user.NAME,
+        surname: user.SURNAME,
         email: user.EMAIL,
         isAdmin: user.ISADMIN === 1,
       },

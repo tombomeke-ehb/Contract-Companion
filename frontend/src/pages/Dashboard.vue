@@ -5,7 +5,7 @@
       <div class="card-header">
         <div>
           <h1 class="section-title" style="margin-bottom: 0.25rem">
-            {{ $t('dashboard.welcomeBack') }}
+            {{ $t('dashboard.welcomeBack') }}<span v-if="displayName">, {{ displayName }}</span>
           </h1>
           <p class="section-subtitle" style="margin-bottom: 0">
             {{ $t('dashboard.subtitle') }}
@@ -95,6 +95,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
+import { useUserStore } from '../stores/userStore'
 
 const reports = [
   {
@@ -128,6 +129,9 @@ const monthFilter = ref('all')
 
 const months = ['Jan 2025', 'Feb 2025', 'Mar 2025', 'Apr 2025', 'May 2025', 'Jun 2025', 'Jul 2025', 'Aug 2025', 'Sep 2025', 'Oct 2025', 'Nov 2025', 'Dec 2025']
 const currentMonth = 'Nov 2025'
+
+const userStore = useUserStore()
+const displayName = computed(() => userStore.user?.name || userStore.user?.email || '')
 
 const filteredReports = computed(() => {
   let filtered = reports

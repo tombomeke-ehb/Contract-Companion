@@ -22,12 +22,8 @@
         {{ $t('nav.brand') }}
       </RouterLink>
 
-      <!-- PUBLIC NAV: only informational links on desktop -->
-      <nav
-        v-if="!isAppRoute"
-        :id="'primary-navigation'"
-        :class="['nav-links', { active: menuOpen }]"
-      >
+      <!-- PUBLIC NAV -->
+      <nav v-if="!isAuthenticated" class="nav-links">
         <RouterLink :to="{ name: 'home' }">
           {{ $t('nav.features') }}
         </RouterLink>
@@ -38,12 +34,22 @@
           {{ $t('nav.about') }}
         </RouterLink>
         <!-- Login / Sign Up blijven alleen voor mobiel in de drawer -->
-        <RouterLink :to="{ name: 'login' }" class="nav-link-auth-mobile">
-          {{ $t('nav.login') }}
-        </RouterLink>
-        <RouterLink :to="{ name: 'signup' }" class="nav-link-auth-mobile">
-          {{ $t('nav.signup') }}
-        </RouterLink>
+        <template v-if="!isLoggedIn">
+          <RouterLink :to="{ name: 'login' }" class="nav-link-auth-mobile">
+            {{ $t('nav.login') }}
+          </RouterLink>
+          <RouterLink :to="{ name: 'signup' }" class="nav-link-auth-mobile">
+            {{ $t('nav.signup') }}
+          </RouterLink>
+        </template>
+        <button
+          v-else
+          type="button"
+          class="nav-link-auth-mobile"
+          @click="handleLogout"
+        >
+          {{ $t('nav.logout') }}
+        </button>
       </nav>
       <nav
         v-else
@@ -62,18 +68,22 @@
         <RouterLink :to="{ name: 'common-contracts' }">
           {{ $t('nav.commonContracts') }}
         </RouterLink>
-        <!-- <RouterLink :to="{ name: 'home' }">Logout</RouterLink> -->
       </nav>
       <!-- Actions (desktop only) -->
       <div class="nav-actions" v-if="!isMobile">
         <template v-if="!isAppRoute">
-          <RouterLink :to="{ name: 'login' }" class="btn btn-outline">Login</RouterLink>
-          <RouterLink :to="{ name: 'signup' }" class="btn btn-primary">Sign Up</RouterLink>
+          <template v-if="!isLoggedIn">
+            <RouterLink :to="{ name: 'login' }" class="btn btn-outline">Login</RouterLink>
+            <RouterLink :to="{ name: 'signup' }" class="btn btn-primary">Sign Up</RouterLink>
+          </template>
+          <button v-else type="button" class="btn btn-outline" @click="handleLogout">
+            {{ $t('nav.logout') }}
+          </button>
         </template>
         <template v-else>
-          <RouterLink :to="{ name: 'home' }" class="btn btn-outline">
+          <button type="button" class="btn btn-outline" @click="handleLogout">
             {{ $t('nav.logout') }}
-          </RouterLink>
+          </button>
         </template>
       </div>
     </div>
@@ -88,9 +98,13 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRoute, RouterLink } from 'vue-router'
+import { useRoute, useRouter, RouterLink } from 'vue-router'
+import { useUserStore } from '../stores/userStore'
 
 const route = useRoute()
+const router = useRouter()
+const userStore = useUserStore()
+
 const appRouteNames = [
   'dashboard',
   'upload',
@@ -100,6 +114,8 @@ const appRouteNames = [
   'admin-dashboard'
 ]
 const isAppRoute = computed(() => appRouteNames.includes(route.name))
+const isLoggedIn = computed(() => !!userStore.user)
+const isAuthenticated = computed(() => !!userStore.user)
 
 const menuOpen = ref(false)
 const isMobile = ref(window.innerWidth <= 768)
@@ -116,9 +132,16 @@ function handleResize() {
   isMobile.value = window.innerWidth <= 768
   if (!isMobile.value) closeMenu()
 }
+function handleLogout() {
+  userStore.logout()
+  closeMenu()
+  router.push({ name: 'home' })
+}
+
 onMounted(() => {
   window.addEventListener('resize', handleResize)
 })
+
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
 })

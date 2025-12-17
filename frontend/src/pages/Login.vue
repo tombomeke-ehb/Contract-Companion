@@ -56,20 +56,20 @@ const password = ref('')
 
 const onLogin = async () => {
   try {
-    const response = await authApi.login({
+    const data = await authApi.login({
       email: email.value,
       password: password.value
     })
 
-    // Store user data in the store
-    userStore.setUser(response.user)
+    // Sla user-state op in de globale store
+    userStore.setUser(data.user)
 
-    // Redirect to admin dashboard if admin, else regular dashboard
-    const redirectName = response.user.isAdmin ? 'admin-dashboard' : 'dashboard'
+    // Redirect naar admin-dashboard als admin, anders gewone dashboard
+    const redirectName = userStore.isAdmin ? 'admin-dashboard' : 'dashboard'
     router.push({ name: redirectName })
   } catch (err) {
     alert(
-      err.response?.data?.error ||
+      err?.error ||
       'Invalid email or password'
     )
   }

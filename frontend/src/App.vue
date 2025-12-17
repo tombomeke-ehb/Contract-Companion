@@ -20,7 +20,7 @@ import { useUserStore } from './stores/userStore'
 
 const userStore = useUserStore()
 
-// Load user from localStorage on app mount
+// Load user state from localStorage on app mount
 onMounted(() => {
   userStore.loadFromStorage()
 })

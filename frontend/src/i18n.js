@@ -7,9 +7,9 @@ const messages = {
       title: 'Settings',
       subtitle: 'Adjust language, theme and security preferences for your account.',
       resetChanges: 'Reset changes',
-      reset: 'Reset changes', 
+      reset: 'Reset changes',
       saveChanges: 'Save changes',
-      save: 'Save changes',          
+      save: 'Save changes',
       saving: 'Saving...',
       cancel: 'Cancel',
       savedStatus: 'Settings saved successfully.',
@@ -37,7 +37,7 @@ const messages = {
     },
 
      dashboard: {
-      welcomeBack: 'Welcome back, John',
+      welcomeBack: 'Welcome back',
       subtitle: 'Here’s what’s happening with your contracts.',
       uploadNewContract: 'Upload New Contract',
 
