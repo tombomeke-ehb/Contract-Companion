@@ -46,10 +46,10 @@
 import { ref } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import authApi from '@/api/auth'
-import { useAuthStore } from '@/stores/authStore'
+import { useUserStore } from '@/stores/userStore'
 
 const router = useRouter()
-const authStore = useAuthStore()
+const userStore = useUserStore()
 
 const email = ref('')
 const password = ref('')
@@ -61,11 +61,11 @@ const onLogin = async () => {
       password: password.value
     })
 
-    // Sla auth-state op in de globale store
-    authStore.setAuth({ token: data.token, user: data.user })
+    // Sla user-state op in de globale store
+    userStore.setUser(data.user)
 
     // Redirect naar admin-dashboard als admin, anders gewone dashboard
-    const redirectName = authStore.isAdmin ? 'admin-dashboard' : 'dashboard'
+    const redirectName = userStore.isAdmin ? 'admin-dashboard' : 'dashboard'
     router.push({ name: redirectName })
   } catch (err) {
     alert(
