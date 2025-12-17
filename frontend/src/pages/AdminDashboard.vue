@@ -99,6 +99,10 @@ const sortFilter = ref('all')
 const router = useRouter()
 
 const filteredReports = computed(() => {
+  if (!Array.isArray(people.value)) {
+    return []
+  }
+
   const list = [...people.value]
 
   if (sortFilter.value === 'asc') {
