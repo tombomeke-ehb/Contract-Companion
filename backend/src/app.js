@@ -16,8 +16,10 @@ const app = express();
 
 // Allow both local dev frontend and production frontend on Combell
 const allowedOrigins = [
-  "http://localhost:5173", // Vite dev server
+  "http://localhost:5173", // Vite dev server (HTTP)
   "http://localhost:5174", // Vite dev server (alt port)
+  "https://localhost:5173", // Vite dev server (HTTPS)
+  "https://localhost:5174", // Vite dev server (alt port HTTPS)
   "https://ehbcontractcompanion.tombomeke.com", // Combell production frontend
 ];
 
