@@ -68,7 +68,6 @@
         <RouterLink :to="{ name: 'common-contracts' }">
           {{ $t('nav.commonContracts') }}
         </RouterLink>
-        <button type="button" class="link-button" @click="handleLogout">Logout</button>
       </nav>
       <!-- Actions (desktop only) -->
       <div class="nav-actions" v-if="!isMobile">
@@ -115,6 +114,7 @@ const appRouteNames = [
 ]
 const isAppRoute = computed(() => appRouteNames.includes(route.name))
 const isLoggedIn = computed(() => !!userStore.user)
+const isAuthenticated = computed(() => !!userStore.user)
 
 const menuOpen = ref(false)
 const isMobile = ref(window.innerWidth <= 768)
@@ -136,18 +136,12 @@ function handleLogout() {
   closeMenu()
   router.push({ name: 'home' })
 }
+
 onMounted(() => {
-  // Hydrate auth-state uit localStorage bij pagina-refresh
-  authStore.initFromStorage()
   window.addEventListener('resize', handleResize)
 })
+
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
 })
-
-const handleLogout = () => {
-  authApi.logout()
-  authStore.clearAuth()
-  router.push({ name: 'home' })
-}
 </script>
