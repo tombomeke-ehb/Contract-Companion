@@ -25,7 +25,32 @@ export async function registerUser(req, res) {
     // Create user (surname is required)
     await createUser(name, email, hashedPassword, surname);
 
-    return res.status(201).json({ message: "Account created." });
+    // Fetch the newly created user to get the ID
+    const newUser = await findUserByEmail(email);
+
+    // Create JWT token for auto-login
+    const token = jwt.sign(
+      {
+        id: newUser.ID_USER,
+        email: newUser.EMAIL,
+        isAdmin: newUser.ISADMIN === 1,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "2h" }
+    );
+
+    // Return token and user info (auto-login after registration)
+    return res.status(201).json({
+      message: "Account created.",
+      token,
+      user: {
+        id: newUser.ID_USER,
+        name: newUser.NAME,
+        surname: newUser.SURNAME,
+        email: newUser.EMAIL,
+        isAdmin: newUser.ISADMIN === 1,
+      },
+    });
 
   } catch (err) {
     console.error("REGISTER ERROR:", err);
@@ -67,6 +92,7 @@ export async function loginUser(req, res) {
       user: {
         id: user.ID_USER,
         name: user.NAME,
+        surname: user.SURNAME,
         email: user.EMAIL,
         isAdmin: user.ISADMIN === 1,
       },
