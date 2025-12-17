@@ -50,13 +50,3 @@ app.use("/api", adminRoutes);
 app.use("/api/people", peopleRoutes);
 
 export default app;
-
-//voor de login
-app.post("/api/login", async (req, res) => {
-  const { email, password } = req.body;
-  try {
-    // ...existing code or future login logic...
-  } catch (err) {
-    // ...error handling...
-  }
-});
