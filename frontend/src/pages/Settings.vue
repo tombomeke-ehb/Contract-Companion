@@ -92,6 +92,8 @@ import { reactive, ref, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import axios from 'axios'
 
+import { applyTheme, persistThemeToStorage } from '../theme'
+
 const { locale, t } = useI18n()
 
 // tijdelijk hardcoded; later uit login halen
@@ -107,7 +109,7 @@ const STORAGE_KEYS = {
 
 const defaultForm = {
   language: 'English',
-  theme: 'dark', // default to dark theme key
+  theme: 'light',
   twoFactor: 'Email',
   sessionTimeout: '30'
 }
@@ -144,17 +146,8 @@ const THEME_CLASS_MAP = {
   'dark-purple': 'theme-dark-purple',
   'dark-blue': 'theme-dark-blue',
   light: 'theme-light',
-  'light-blue': 'theme-light-blue'
-}
-
-const applyTheme = (themeKey) => {
-  const body = document.body
-
-  // verwijder alle bekende theme-klassen eerst
-  Object.values(THEME_CLASS_MAP).forEach((cls) => body.classList.remove(cls))
-
-  const cls = THEME_CLASS_MAP[themeKey] || THEME_CLASS_MAP.dark
-  body.classList.add(cls)
+  'light-blue': 'theme-light-blue',
+  'high-contrast': 'theme-high-contrast'
 }
 
 const mapUiToCode = (languageLabel) => (languageLabel === 'Nederlands' ? 'nl' : 'en')
@@ -191,10 +184,14 @@ function loadFromStorage() {
 
 function saveToStorage() {
   try {
+    // keep Settings storage keys for backwards compatibility
     localStorage.setItem(STORAGE_KEYS.theme, form.theme)
     localStorage.setItem(STORAGE_KEYS.language, mapUiToCode(form.language))
     localStorage.setItem(STORAGE_KEYS.twoFactor, form.twoFactor)
     localStorage.setItem(STORAGE_KEYS.sessionTimeout, form.sessionTimeout)
+
+    // also save theme via shared helper (used by app startup)
+    persistThemeToStorage(form.theme)
   } catch (e) {
     console.warn('Kon settings niet in localStorage opslaan', e)
   }
@@ -250,6 +247,7 @@ onMounted(async () => {
 })
 
 const resetSettings = () => {
+  // reset to LIGHT + English
   Object.assign(form, defaultForm)
 
   notifications.productNews = true
