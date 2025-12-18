@@ -4,7 +4,7 @@ import { getPreferences, updatePreferences } from "../controllers/preference.con
 
 const router = express.Router();
 
-// Alle preference-routes vereisen een ingelogde gebruiker
+// All preference-routes require a logged-in user
 router.use(authenticate);
 
 router.get("/:userId", getPreferences);

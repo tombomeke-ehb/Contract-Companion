@@ -3,7 +3,7 @@ import { authenticate, isAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// Beveiligde admin route
+// Secured admin route
 router.get("/admin", authenticate, isAdmin, (req, res) => {
   res.json({ message: "Welcome admin" });
 });
