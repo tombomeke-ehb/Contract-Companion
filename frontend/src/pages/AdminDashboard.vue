@@ -136,7 +136,7 @@ const form = reactive({ name: '', surname: '', email: '', password: '' })
 const loading = ref(false)
 const submitting = ref(false)
 const errorMessage = ref('')
-
+// Load people from API
 const loadPeople = async () => {
   loading.value = true
   errorMessage.value = ''
@@ -150,7 +150,7 @@ const loadPeople = async () => {
     loading.value = false
   }
 }
-
+// Add new person
 const addPerson = async () => {
   submitting.value = true
   errorMessage.value = ''
@@ -174,7 +174,7 @@ const addPerson = async () => {
     submitting.value = false
   }
 }
-
+// Delete person
 const deletePerson = async (personId) => {
   try {
     await deletePersonAPI(personId)

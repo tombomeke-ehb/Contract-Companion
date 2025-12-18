@@ -102,7 +102,7 @@ const filteredContracts = computed(() => {
     return matchesCategory && matchesQuery
   })
 })
-
+// Load common contracts from API
 async function loadContracts() {
   try {
     const data = await getCommonContracts()

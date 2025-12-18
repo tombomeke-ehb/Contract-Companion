@@ -96,7 +96,7 @@ import { applyTheme, persistThemeToStorage } from '../theme'
 
 const { locale, t } = useI18n()
 
-// tijdelijk hardcoded; later uit login halen
+// temporary user ID for demo purposes
 const userId = 1
 
 // Keys for localStorage so we can persist across navigations
@@ -160,6 +160,7 @@ const veranderTaal = (languageLabel) => {
 // --- helpers for localStorage persistence ---
 function loadFromStorage() {
   try {
+    // keep Settings storage keys for backwards compatibility
     const storedTheme = localStorage.getItem(STORAGE_KEYS.theme)
     const storedLangCode = localStorage.getItem(STORAGE_KEYS.language)
     const storedTwoFactor = localStorage.getItem(STORAGE_KEYS.twoFactor)
@@ -220,10 +221,10 @@ watch(
 )
 
 onMounted(async () => {
-  // 1) lokaal laden
+  // 1) Load from localStorage
   loadFromStorage()
 
-  // 2) meteen toepassen
+  // 2) apply settings
   applyTheme(form.theme)
   veranderTaal(form.language)
 
