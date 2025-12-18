@@ -1,4 +1,5 @@
 // backend/src/app.js
+// Main application setup for the backend server
 
 import express from "express";
 import cors from "cors";

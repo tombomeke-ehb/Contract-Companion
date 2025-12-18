@@ -1,7 +1,8 @@
 // backend/src/server.js
+// Entry point for the backend server application
 
 import dotenv from "dotenv";
-dotenv.config(); // charge .env AVANT toute importation
+dotenv.config(); // Load environment variables from .env file
 
 import fs from "fs";
 import http from "http";
@@ -11,7 +12,7 @@ import * as db from "./config/db.js";
 
 const PORT = process.env.PORT || 3000;
 const HTTPS_PORT = process.env.HTTPS_PORT || 3443;
-
+// Function to create HTTP or HTTPS server based on environment variables
 function createServer() {
   const keyPath = process.env.HTTPS_KEY;
   const certPath = process.env.HTTPS_CERT;
