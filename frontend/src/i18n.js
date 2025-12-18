@@ -146,7 +146,7 @@ const messages = {
       notifications: 'Meldingen'
     },
     dashboard: {
-      welcomeBack: 'Welkom terug, John',
+      welcomeBack: 'Welkom terug',
       subtitle: 'Dit is de huidige status van je contracten.',
       uploadNewContract: 'Nieuw contract uploaden',
 
