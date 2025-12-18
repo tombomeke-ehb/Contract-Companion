@@ -27,8 +27,11 @@
           <div class="form-group">
             <label class="label" for="theme">{{ $t('settings.theme') }}</label>
             <select id="theme" v-model="form.theme" class="select">
-              <option value="Light">{{ $t('settings.themeLight') }}</option>
-              <option value="Dark">{{ $t('settings.themeDark') }}</option>
+              <option value="dark">Donker</option>
+              <option value="light">Licht</option>
+              <option value="dark-purple">Donker – Paars</option>
+              <option value="dark-blue">Donker – Blauw</option>
+              <option value="high-contrast">High contrast</option>
             </select>
           </div>
         </form>
@@ -89,6 +92,8 @@ import { reactive, ref, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import axios from 'axios'
 
+import { applyTheme, persistThemeToStorage } from '../theme'
+
 const { locale, t } = useI18n()
 
 // tijdelijk hardcoded; later uit login halen
@@ -96,15 +101,15 @@ const userId = 1
 
 // Keys for localStorage so we can persist across navigations
 const STORAGE_KEYS = {
-  theme: 'cc_theme',
-  language: 'cc_language', // stores lang code: 'en' | 'nl'
+  theme: 'cc_theme_v2', // new multi-theme key
+  language: 'cc_language',
   twoFactor: 'cc_twoFactor',
   sessionTimeout: 'cc_sessionTimeout'
 }
 
 const defaultForm = {
   language: 'English',
-  theme: 'Light',
+  theme: 'light',
   twoFactor: 'Email',
   sessionTimeout: '30'
 }
@@ -135,13 +140,14 @@ const notificationLabels = {
 const isSaving = ref(false)
 const status = ref('')
 
-const veranderThema = (theme) => {
-  const html = document.documentElement
-  if (theme === 'Dark') {
-    html.classList.add('theme-dark')
-  } else {
-    html.classList.remove('theme-dark')
-  }
+// Map our theme keys to body classes
+const THEME_CLASS_MAP = {
+  dark: 'theme-dark',
+  'dark-purple': 'theme-dark-purple',
+  'dark-blue': 'theme-dark-blue',
+  light: 'theme-light',
+  'light-blue': 'theme-light-blue',
+  'high-contrast': 'theme-high-contrast'
 }
 
 const mapUiToCode = (languageLabel) => (languageLabel === 'Nederlands' ? 'nl' : 'en')
@@ -159,7 +165,7 @@ function loadFromStorage() {
     const storedTwoFactor = localStorage.getItem(STORAGE_KEYS.twoFactor)
     const storedSession = localStorage.getItem(STORAGE_KEYS.sessionTimeout)
 
-    if (storedTheme === 'Light' || storedTheme === 'Dark') {
+    if (storedTheme && THEME_CLASS_MAP[storedTheme]) {
       form.theme = storedTheme
     }
     if (storedLangCode === 'en' || storedLangCode === 'nl') {
@@ -178,10 +184,14 @@ function loadFromStorage() {
 
 function saveToStorage() {
   try {
+    // keep Settings storage keys for backwards compatibility
     localStorage.setItem(STORAGE_KEYS.theme, form.theme)
     localStorage.setItem(STORAGE_KEYS.language, mapUiToCode(form.language))
     localStorage.setItem(STORAGE_KEYS.twoFactor, form.twoFactor)
     localStorage.setItem(STORAGE_KEYS.sessionTimeout, form.sessionTimeout)
+
+    // also save theme via shared helper (used by app startup)
+    persistThemeToStorage(form.theme)
   } catch (e) {
     console.warn('Kon settings niet in localStorage opslaan', e)
   }
@@ -190,46 +200,54 @@ function saveToStorage() {
 watch(
   () => ({ ...form }),
   () => {
-    // whenever a form field changes, persist locally for quick reloads
     saveToStorage()
   },
   { deep: true }
 )
 
-watch(() => form.theme, (newTheme) => veranderThema(newTheme))
-watch(() => form.language, (newLanguageLabel) => veranderTaal(newLanguageLabel))
+watch(
+  () => form.theme,
+  (newTheme) => {
+    applyTheme(newTheme)
+  }
+)
+
+watch(
+  () => form.language,
+  (newLanguageLabel) => {
+    veranderTaal(newLanguageLabel)
+  }
+)
 
 onMounted(async () => {
-  // Stap 1: probeer eerst uit localStorage te laden zodat UI meteen klopt
+  // 1) lokaal laden
   loadFromStorage()
 
-  // Altijd huidige theme + taal toepassen (ook als er nog niets in storage staat)
-  veranderThema(form.theme)
+  // 2) meteen toepassen
+  applyTheme(form.theme)
   veranderTaal(form.language)
 
-  // Stap 2: sync met backend-preferences; dit overwrijft enkel
-  // als backend iets heeft staan, anders blijven huidige (mogelijk locale) waarden.
+  // 3) backend sync
   try {
     const { data } = await axios.get(`http://localhost:3000/api/preferences/${userId}`)
 
-    if (data.THEME) {
+    if (data.THEME && THEME_CLASS_MAP[data.THEME]) {
       form.theme = data.THEME
     }
     if (data.LANG) {
       form.language = mapCodeToUi(data.LANG)
     }
 
-    // Na het binnenhalen van backend-waarden: toepassen + cachen in localStorage
-    veranderThema(form.theme)
+    applyTheme(form.theme)
     veranderTaal(form.language)
     saveToStorage()
   } catch (err) {
     console.error('Kon preferences niet laden', err)
-    // we blijven gewoon bij de localStorage/default waardes
   }
 })
 
 const resetSettings = () => {
+  // reset to LIGHT + English
   Object.assign(form, defaultForm)
 
   notifications.productNews = true
@@ -238,7 +256,7 @@ const resetSettings = () => {
 
   status.value = ''
 
-  veranderThema(form.theme)
+  applyTheme(form.theme)
   veranderTaal(form.language)
   saveToStorage()
 }
@@ -255,7 +273,6 @@ const saveSettings = async () => {
   try {
     await axios.put(`http://localhost:3000/api/preferences/${userId}`, payload)
     status.value = t('settings.savedStatus')
-    // bij succes ook in localStorage bewaren
     saveToStorage()
   } catch (err) {
     console.error(err)
