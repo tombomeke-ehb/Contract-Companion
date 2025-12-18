@@ -6,13 +6,18 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
+// Check if SSL certificates exist
+const keyPath = path.resolve(__dirname, '../certs/key.pem')
+const certPath = path.resolve(__dirname, '../certs/cert.pem')
+const hasSSL = fs.existsSync(keyPath) && fs.existsSync(certPath)
+
 // https://vite.dev/config/
 export default defineConfig({
   server: {
-    https: {
-      key: fs.readFileSync(path.resolve(__dirname, '../certs/key.pem')),
-      cert: fs.readFileSync(path.resolve(__dirname, '../certs/cert.pem')),
-    },
+    https: hasSSL ? {
+      key: fs.readFileSync(keyPath),
+      cert: fs.readFileSync(certPath),
+    } : false,
     port: 5173,
   },
   plugins: [

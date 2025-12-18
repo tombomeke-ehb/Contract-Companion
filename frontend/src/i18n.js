@@ -103,8 +103,8 @@ const messages = {
       login: 'Login',
       signup: 'Sign Up',
       logout: 'Logout',
-      openMenu: 'Open navigation menu',
-      closeMenu: 'Close navigation menu'
+      openMenu: 'Open menu',
+      closeMenu: 'Close menu'
     },
 
 
@@ -213,8 +213,8 @@ const messages = {
       login: 'Inloggen',
       signup: 'Registreren',
       logout: 'Uitloggen',
-      openMenu: 'Navigatiemenu openen',
-      closeMenu: 'Navigatiemenu sluiten'
+      openMenu: 'Menu openen',
+      closeMenu: 'Menu sluiten'
     },
   }
 }
