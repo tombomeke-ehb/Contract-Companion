@@ -56,7 +56,7 @@
         :id="'primary-navigation'"
         :class="['nav-links', { active: menuOpen }]"
       >
-        <RouterLink :to="{ name: 'dashboard' }">
+        <RouterLink :to="{ name: isAdmin ? 'admin-dashboard' : 'dashboard' }">
           {{ $t('nav.dashboard') }}
         </RouterLink>
         <RouterLink :to="{ name: 'upload' }">
@@ -65,7 +65,7 @@
         <RouterLink :to="{ name: 'settings' }">
           {{ $t('nav.settings') }}
         </RouterLink>
-        <RouterLink :to="{ name: 'common-contracts' }">
+        <RouterLink :to="{ name: isAdmin ? 'admin-common-contracts' : 'common-contracts' }">
           {{ $t('nav.commonContracts') }}
         </RouterLink>
       </nav>
@@ -115,6 +115,7 @@ const appRouteNames = [
 const isAppRoute = computed(() => appRouteNames.includes(route.name))
 const isLoggedIn = computed(() => !!userStore.user)
 const isAuthenticated = computed(() => !!userStore.user)
+const isAdmin = computed(() => userStore.user?.isAdmin === true)
 
 const menuOpen = ref(false)
 const isMobile = ref(window.innerWidth <= 768)
