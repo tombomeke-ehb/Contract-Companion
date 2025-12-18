@@ -15,7 +15,7 @@ import Terms from '../pages/Terms.vue'
 import Docs from '../pages/Docs.vue'
 import Contact from '../pages/Contact.vue'
 import Security from '../pages/Security.vue'
-
+// Define routes
 const routes = [
   { path: '/', name: 'home', component: Home },
   { path: '/login', name: 'login', component: Login },

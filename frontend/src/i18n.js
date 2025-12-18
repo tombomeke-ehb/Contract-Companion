@@ -1,5 +1,6 @@
 import { createI18n } from 'vue-i18n'
 
+// Define translation messages
 const messages = {
   en: {
     settings: {
