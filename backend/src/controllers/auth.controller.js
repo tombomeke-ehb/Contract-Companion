@@ -13,6 +13,12 @@ export async function registerUser(req, res) {
       return res.status(400).json({ error: "Please fill in all fields (including last name)." });
     }
 
+    // Basic password policy: min 8 chars, at least 1 letter and 1 digit
+    const pwdOk = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(password);
+    if (!pwdOk) {
+      return res.status(400).json({ error: "Password must be at least 8 characters and include a letter and a number." });
+    }
+
     // Check if user already exists
     const existing = await findUserByEmail(email);
     if (existing) {
