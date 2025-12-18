@@ -8,6 +8,8 @@
     </main>
 
     <Footer />
+
+    <ToastHost />
   </div>
 </template>
 
@@ -16,6 +18,7 @@ import { RouterView } from 'vue-router'
 import { onMounted } from 'vue'
 import Navbar from './components/Navbar.vue'
 import Footer from './components/Footer.vue'
+import ToastHost from './components/ToastHost.vue'
 import { useUserStore } from './stores/userStore'
 
 const userStore = useUserStore()

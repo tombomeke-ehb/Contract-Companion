@@ -107,8 +107,12 @@ const messages = {
       openMenu: 'Open menu',
       closeMenu: 'Close menu'
     },
-
-
+    toast: {
+      welcome: 'Welcome, {name}',
+      goodbye: 'Goodbye, {name}',
+      loggedOutTitle: 'Logged out',
+      loggedOutBody: 'You have been logged out.'
+    }
   },
   nl: {
     settings: {
@@ -217,6 +221,12 @@ const messages = {
       openMenu: 'Menu openen',
       closeMenu: 'Menu sluiten'
     },
+    toast: {
+      welcome: 'Welkom, {name}',
+      goodbye: 'Tot ziens, {name}',
+      loggedOutTitle: 'Uitgelogd',
+      loggedOutBody: 'Je bent uitgelogd.'
+    }
   }
 }
 

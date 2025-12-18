@@ -62,6 +62,15 @@
   --btn-secondary-bg-hover: var(--accent-soft);
   --btn-secondary-text-hover: var(--accent-hover);
   --btn-secondary-border-hover: var(--accent-color);
+
+  /* Toast notifications */
+  --toast-bg: color-mix(in oklab, var(--card-bg) 92%, var(--bg) 8%);
+  --toast-border: color-mix(in oklab, var(--border) 85%, var(--text) 15%);
+  --toast-text: var(--text);
+  --toast-shadow: 0 10px 28px rgba(17, 24, 39, 0.12);
+
+  --toast-accent: var(--accent-color);
+  --toast-accent-soft: var(--accent-soft);
 }
 
 /* Dark palette: activated when body has any dark theme class */
@@ -100,6 +109,12 @@ body.theme-dark-blue {
   --btn-secondary-bg-hover: rgba(2, 6, 23, 0.7);
   --btn-secondary-text-hover: #f9fafb;
   --btn-secondary-border-hover: var(--accent-color);
+
+  /* Toast notifications (brighter than page bg for visibility) */
+  --toast-bg: color-mix(in oklab, #111827 70%, #020617 30%);
+  --toast-border: rgba(148, 163, 184, 0.35);
+  --toast-text: #f9fafb;
+  --toast-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
 
   background: radial-gradient(circle at top, #020617 0, #020617 45%, #020617 100%);
 }
@@ -677,6 +692,86 @@ html.theme-dark .menu-toggle-icon span {
 
 .btn-outline:hover:not(:disabled) {
   color: var(--btn-secondary-text-hover);
+}
+
+/* ===================================
+   Toast notifications
+   =================================== */
+
+.toast-host {
+  position: fixed;
+  right: 1.25rem;
+  top: 5rem;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  width: min(420px, calc(100vw - 2.5rem));
+  background: var(--toast-bg);
+  color: var(--toast-text);
+  border: 1px solid var(--toast-border);
+  border-left: 5px solid var(--toast-accent);
+  border-radius: 12px;
+  box-shadow: var(--toast-shadow);
+  padding: 0.9rem 1rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  backdrop-filter: blur(8px);
+}
+
+.toast__title {
+  font-weight: 800;
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.toast__message {
+  margin-top: 0.2rem;
+  color: color-mix(in oklab, var(--toast-text) 70%, transparent);
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+
+.toast__close {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: transparent;
+  color: var(--toast-text);
+  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toast__close:hover {
+  border-color: var(--toast-accent);
+  background: color-mix(in oklab, var(--toast-accent-soft) 70%, transparent);
+}
+
+.toast--success { --toast-accent: var(--success); }
+.toast--info { --toast-accent: var(--accent-color); }
+.toast--warning { --toast-accent: var(--warning); }
+.toast--danger { --toast-accent: var(--danger); }
+
+@media (max-width: 768px) {
+  .toast-host {
+    right: 0.75rem;
+    left: 0.75rem;
+    top: 4.5rem;
+  }
+
+  .toast {
+    width: auto;
+  }
 }
 
 /* ===================================

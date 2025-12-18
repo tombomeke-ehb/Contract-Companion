@@ -100,10 +100,14 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useUserStore } from '../stores/userStore'
+import { useNotificationStore } from '@/stores/notificationStore'
+import { useI18n } from 'vue-i18n'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const notifications = useNotificationStore()
+const { t } = useI18n()
 
 const appRouteNames = [
   'dashboard',
@@ -134,7 +138,13 @@ function handleResize() {
   if (!isMobile.value) closeMenu()
 }
 function handleLogout() {
+  const name = userStore.user?.name || userStore.user?.email || ''
   userStore.logout()
+  notifications.push({
+    title: t('toast.loggedOutTitle'),
+    message: name ? t('toast.goodbye', { name }) : t('toast.loggedOutBody'),
+    variant: 'info'
+  })
   closeMenu()
   router.push({ name: 'home' })
 }
