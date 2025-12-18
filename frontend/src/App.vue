@@ -13,15 +13,110 @@
 
 <script setup>
 import { RouterView } from 'vue-router'
-import { onMounted } from 'vue'
+import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import Navbar from './components/Navbar.vue'
 import Footer from './components/Footer.vue'
 import { useUserStore } from './stores/userStore'
+import axios from 'axios'
+import { useRouter } from 'vue-router'
 
 const userStore = useUserStore()
+const router = useRouter()
+
+const sessionTimeoutMinutes = ref(30)
+let idleTimer = null
+
+function clearIdleTimer() {
+  if (idleTimer) {
+    clearTimeout(idleTimer)
+    idleTimer = null
+  }
+}
+
+function scheduleIdleLogout() {
+  clearIdleTimer()
+  const ms = (Number(sessionTimeoutMinutes.value) || 30) * 60 * 1000
+  idleTimer = setTimeout(() => {
+    // perform logout
+    userStore.logout()
+    router.push({ name: 'login' })
+    alert('You have been logged out due to inactivity')
+  }, ms)
+}
+
+function resetIdleTimer() {
+  if (!userStore.user) return
+  scheduleIdleLogout()
+}
+
+function addActivityListeners() {
+  const events = ['mousemove', 'mousedown', 'keydown', 'touchstart']
+  events.forEach((ev) => window.addEventListener(ev, resetIdleTimer))
+}
+
+function removeActivityListeners() {
+  const events = ['mousemove', 'mousedown', 'keydown', 'touchstart']
+  events.forEach((ev) => window.removeEventListener(ev, resetIdleTimer))
+}
 
 // Load user state from localStorage on app mount
-onMounted(() => {
+onMounted(async () => {
   userStore.loadFromStorage()
+
+  // If a user is already logged in, fetch their preferences to get session timeout
+  if (userStore.user?.id) {
+    try {
+      const { data } = await axios.get(`http://localhost:3000/api/preferences/${userStore.user.id}`)
+      if (data?.SESSION_TIMEOUT) {
+        sessionTimeoutMinutes.value = Number(data.SESSION_TIMEOUT)
+      }
+    } catch (err) {
+      // ignore - fallback to default
+    }
+  }
+
+  // start listening to activity if user logged in
+  if (userStore.user) {
+    addActivityListeners()
+    scheduleIdleLogout()
+  }
+
+  // Listen for settings changes (session timeout updates)
+  const sessionListener = (e) => {
+    const val = Number(e?.detail ?? window.sessionTimeoutChanged ?? sessionTimeoutMinutes.value)
+    if (!isNaN(val) && val > 0) {
+      sessionTimeoutMinutes.value = val
+      scheduleIdleLogout()
+    }
+  }
+
+  window.addEventListener('sessionTimeoutChanged', sessionListener)
+})
+
+onBeforeUnmount(() => {
+  clearIdleTimer()
+  removeActivityListeners()
+  window.removeEventListener('sessionTimeoutChanged', sessionListener)
+})
+onBeforeUnmount(() => {
+  clearIdleTimer()
+  removeActivityListeners()
+})
+
+// If the user logs in/out later, add/remove listeners and (re)schedule
+watch(() => userStore.user, (newUser) => {
+  clearIdleTimer()
+  removeActivityListeners()
+  if (newUser) {
+    // try to fetch user preferences
+    axios.get(`http://localhost:3000/api/preferences/${newUser.id}`).then(({ data }) => {
+      if (data?.SESSION_TIMEOUT) sessionTimeoutMinutes.value = Number(data.SESSION_TIMEOUT)
+      scheduleIdleLogout()
+      addActivityListeners()
+    }).catch(() => {
+      scheduleIdleLogout()
+      addActivityListeners()
+    })
+  }
 })
 </script>

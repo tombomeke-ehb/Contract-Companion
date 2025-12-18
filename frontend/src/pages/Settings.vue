@@ -200,15 +200,15 @@ watch(() => form.theme, (newTheme) => veranderThema(newTheme))
 watch(() => form.language, (newLanguageLabel) => veranderTaal(newLanguageLabel))
 
 onMounted(async () => {
-  // Stap 1: probeer eerst uit localStorage te laden zodat UI meteen klopt
+  // step 1: load from localStorage
   loadFromStorage()
 
-  // Altijd huidige theme + taal toepassen (ook als er nog niets in storage staat)
+  // apply immediately
   veranderThema(form.theme)
   veranderTaal(form.language)
 
-  // Stap 2: sync met backend-preferences; dit overwrijft enkel
-  // als backend iets heeft staan, anders blijven huidige (mogelijk locale) waarden.
+  // step 2: sync with backend preferences; this overwrites only
+  // if backend has something set, otherwise keep current (possibly local) values.
   try {
     const { data } = await axios.get(`http://localhost:3000/api/preferences/${userId}`)
 
@@ -218,14 +218,17 @@ onMounted(async () => {
     if (data.LANG) {
       form.language = mapCodeToUi(data.LANG)
     }
+    // load persisted session timeout from backend (minutes)
+    if (data.SESSION_TIMEOUT) {
+      form.sessionTimeout = String(data.SESSION_TIMEOUT)
+    }
 
-    // Na het binnenhalen van backend-waarden: toepassen + cachen in localStorage
+    // after catching it --> caching in localStorage
     veranderThema(form.theme)
     veranderTaal(form.language)
     saveToStorage()
   } catch (err) {
     console.error('Kon preferences niet laden', err)
-    // we blijven gewoon bij de localStorage/default waardes
   }
 })
 
@@ -249,14 +252,23 @@ const saveSettings = async () => {
 
   const payload = {
     theme: form.theme,
-    language: mapUiToCode(form.language)
+    language: mapUiToCode(form.language),
+    sessionTimeout: Number(form.sessionTimeout)
   }
 
   try {
     await axios.put(`http://localhost:3000/api/preferences/${userId}`, payload)
     status.value = t('settings.savedStatus')
-    // bij succes ook in localStorage bewaren
     saveToStorage()
+
+    // Notify the app about session timeout change so idle timer can update
+    try {
+      const ev = new CustomEvent('sessionTimeoutChanged', { detail: Number(form.sessionTimeout) })
+      window.dispatchEvent(ev)
+    } catch (e) {
+      // ignore if CustomEvent not supported
+      window.sessionTimeoutChanged = Number(form.sessionTimeout)
+    }
   } catch (err) {
     console.error(err)
     status.value = t('settings.saveError')
