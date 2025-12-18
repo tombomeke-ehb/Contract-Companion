@@ -55,7 +55,7 @@
           <div class="card-subtitle" style="margin-right:auto;">Updated {{ contract.updated }}</div>
           <RouterLink
             class="btn btn-outline"
-            :to="{ name: 'report-detail', params: { id: contract.sampleReport } }"
+            :to="{ name: 'report-detail', params: { id: contract.sampleReport }, query: { from: 'common' } }"
           >
             View analysis
           </RouterLink>
