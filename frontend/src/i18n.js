@@ -102,7 +102,9 @@ const messages = {
       commonContracts: 'Common Contracts',
       login: 'Login',
       signup: 'Sign Up',
-      logout: 'Logout'
+      logout: 'Logout',
+      openMenu: 'Open menu',
+      closeMenu: 'Close menu'
     },
 
 
@@ -144,7 +146,7 @@ const messages = {
       notifications: 'Meldingen'
     },
     dashboard: {
-      welcomeBack: 'Welkom terug, John',
+      welcomeBack: 'Welkom terug',
       subtitle: 'Dit is de huidige status van je contracten.',
       uploadNewContract: 'Nieuw contract uploaden',
 
@@ -210,7 +212,9 @@ const messages = {
       commonContracts: 'Standaardcontracten',
       login: 'Inloggen',
       signup: 'Registreren',
-      logout: 'Uitloggen'
+      logout: 'Uitloggen',
+      openMenu: 'Menu openen',
+      closeMenu: 'Menu sluiten'
     },
   }
 }
