@@ -94,8 +94,10 @@
 import { reactive, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import auth from '../api/auth'
+import { useUserStore } from '../stores/userStore'
 
 const router = useRouter()
+const userStore = useUserStore()
 
 const form = reactive({
   name: '',
@@ -117,7 +119,13 @@ const handleSignup = async () => {
   error.value = ''
 
   try {
-    await auth.signup(form)
+    const data = await auth.signup(form)
+
+    // Sla user-state op in de globale store
+    if (data.user) {
+      userStore.setUser(data.user)
+    }
+
     router.push({ name: 'dashboard' })
   } catch (err) {
     error.value = err.message || 'Signup failed. Please try again.'

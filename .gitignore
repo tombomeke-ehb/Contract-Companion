@@ -15,6 +15,9 @@ pids
 
 # Dependency directories
 node_modules/
+package-lock.json
+**/package-lock.json
+*package-lock*
 
 # System files
 .DS_Store
@@ -25,6 +28,13 @@ Thumbs.db
 .env.*
 documentation-key.json
 documentation-key
+
+# SSL/TLS certificates (local development only)
+certs/
+*.pem
+*.key
+*.crt
+*.cert
 
 # Build output
 dist

@@ -46,23 +46,30 @@
 import { ref } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import authApi from '@/api/auth'
+import { useUserStore } from '@/stores/userStore'
 
 const router = useRouter()
+const userStore = useUserStore()
 
 const email = ref('')
 const password = ref('')
 
 const onLogin = async () => {
   try {
-    await authApi.login({
+    const data = await authApi.login({
       email: email.value,
       password: password.value
     })
 
-    router.push({ name: 'dashboard' })
+    // Sla user-state op in de globale store
+    userStore.setUser(data.user)
+
+    // Redirect naar admin-dashboard als admin, anders gewone dashboard
+    const redirectName = userStore.isAdmin ? 'admin-dashboard' : 'dashboard'
+    router.push({ name: redirectName })
   } catch (err) {
     alert(
-      err.response?.data?.error ||
+      err?.error ||
       'Invalid email or password'
     )
   }

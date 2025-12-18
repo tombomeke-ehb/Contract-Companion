@@ -1,3 +1,4 @@
+import oracledb from "oracledb";
 import { query } from "../config/db.js";
 
 // Service for working with contract summaries and risk scores.
@@ -6,16 +7,17 @@ import { query } from "../config/db.js";
 // Create a new summary row for a given document.
 export async function createSummary({ idDoc, text, riskScore }) {
   const sql = `
-    INSERT INTO SAMENVATTING (SAMENVATTING_ID, ID_DOC, TEKST, RISK_SCORE)
-    VALUES (SAMENVATTING_SEQ.NEXTVAL, :idDoc, :text, :riskScore)
+    INSERT INTO SAMENVATTING (ID_DOC, TEKST, RISK_SCORE)
+    VALUES (:idDoc, :text, :riskScore)
     RETURNING SAMENVATTING_ID INTO :outId
   `;
 
   const binds = {
-    idDoc,
-    text,
-    riskScore,
-    outId: { dir: 3003, type: 2010 }, // oracledb.BIND_OUT / NUMBER, kept abstract here
+    // Explicit types so oracledb doesn't complain about bind data.
+    idDoc: { val: idDoc, type: oracledb.NUMBER },
+    text: { val: text, type: oracledb.STRING },
+    riskScore: { val: riskScore, type: oracledb.NUMBER },
+    outId: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
   };
 
   const result = await query(sql, binds, { autoCommit: true });

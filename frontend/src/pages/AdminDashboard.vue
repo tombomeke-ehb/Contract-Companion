@@ -10,7 +10,12 @@
             Take a look at this...
           </p>
         </div>
-        <button @click="showModal = true" class="btn btn-primary">+ Add new Person</button>
+        <div style="display:flex; gap:0.5rem;">
+          <button @click="showModal = true" class="btn btn-primary">+ Add new Person</button>
+          <RouterLink :to="{ name: 'admin-common-contracts' }" class="btn btn-outline">
+            Manage contracts
+          </RouterLink>
+        </div>
       </div>
     </div>
 
@@ -34,7 +39,7 @@
             <h3 style="margin-bottom:0.25rem;">{{ person.name }}</h3>
             <p class="card-subtitle">{{ person.surname }}</p>
             <p class="card-subtitle" style="font-size: 0.85rem;">📧 {{ person.email }}</p>
-            <p class="card-subtitle" style="font-size: 0.85rem;">📱 {{ person.phone }}</p>
+
           </div>
           <div class="report-list__meta">
             <span class="badge" :class="badgeClass(person.risk)">
@@ -60,19 +65,19 @@
         <form @submit.prevent="addPerson">
           <div class="form-group">
             <label class="label">First name</label>
-            <input v-model="form.name" class="input" type="text" required />
+            <input v-model="form.name" class="input" type="text" placeholder="John" required />
           </div>
           <div class="form-group">
             <label class="label">Surname</label>
-            <input v-model="form.surname" class="input" type="text" required />
+            <input v-model="form.surname" class="input" type="text" placeholder="Doe" required />
           </div>
           <div class="form-group">
             <label class="label">Email</label>
-            <input v-model="form.email" class="input" type="email" required />
+            <input v-model="form.email" class="input" type="email" placeholder="example@gmail.com" required />
           </div>
           <div class="form-group">
             <label class="label">Password</label>
-            <input v-model="form.password" class="input" type="password" required />
+            <input v-model="form.password" class="input" type="password" placeholder="••••••••" required />
           </div>
           <div style="display: flex; gap: 0.5rem;">
             <button type="submit" class="btn btn-primary" style="flex: 1;">Add</button>
@@ -86,13 +91,18 @@
 
 <script setup>
 import { ref, computed, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, RouterLink } from 'vue-router'
 import { deletePerson as deletePersonAPI, createPerson as createPersonAPI, getPeople as getPeopleAPI } from '../api/people'
 
 const people = ref([])
 const sortFilter = ref('all')
+const router = useRouter()
 
 const filteredReports = computed(() => {
+  if (!Array.isArray(people.value)) {
+    return []
+  }
+
   const list = [...people.value]
 
   if (sortFilter.value === 'asc') {
@@ -117,13 +127,12 @@ const badgeClass = (risk) => {
   return 'badge-low'
 }
 
-const router = useRouter()
 function goToReport(id) {
   router.push({ name: 'report-detail', params: { id } })
 }
 
 const showModal = ref(false)
-const form = reactive({ name: '', surname: '', email: '', phone: '', password: '' })
+const form = reactive({ name: '', surname: '', email: '', password: '' })
 const loading = ref(false)
 const submitting = ref(false)
 const errorMessage = ref('')
@@ -150,7 +159,6 @@ const addPerson = async () => {
       name: form.name,
       surname: form.surname,
       email: form.email,
-      phone: form.phone,
       password: form.password
     })
     people.value.unshift(created)
@@ -159,7 +167,6 @@ const addPerson = async () => {
     form.surname = ''
     form.email = ''
     form.password = ''
-    form.phone = ''
   } catch (err) {
     console.error('Failed to add person', err)
     errorMessage.value = err?.message || 'Toevoegen mislukt. Controleer de invoer en probeer opnieuw.'
@@ -173,10 +180,10 @@ const deletePerson = async (personId) => {
     await deletePersonAPI(personId)
 
     // Remove from local array
-    const index = people.findIndex(p => p.id === personId)
+    const index = people.value.findIndex(p => p.id === personId)
     if (index > -1) {
-      const deletedPerson = people[index]
-      people.splice(index, 1)
+      const deletedPerson = people.value[index]
+      people.value.splice(index, 1)
       console.log(`Deleted person: ${deletedPerson.name} (ID: ${personId})`)
     }
   } catch (error) {

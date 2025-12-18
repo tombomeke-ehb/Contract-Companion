@@ -73,48 +73,11 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
+import { getCommonContracts } from '../api/contracts'
 
-const contracts = [
-  {
-    id: 'basic-fit',
-    name: 'Basic-Fit membership',
-    category: 'Subscriptions',
-    summary:
-      'Minimum 12 months with automatic renewal and a one-month cancellation window.',
-    stats: { high: 1, medium: 2, low: 4 },
-    updated: 'Jan 2025',
-    sampleReport: 1
-  },
-  {
-    id: 'spotify',
-    name: 'Spotify Premium',
-    category: 'Subscriptions',
-    summary: 'Monthly contract, cancellable at any time via your account.',
-    stats: { high: 0, medium: 1, low: 3 },
-    updated: 'Dec 2024',
-    sampleReport: 2
-  },
-  {
-    id: 'nda-startup',
-    name: 'Startup NDA template',
-    category: 'Legal',
-    summary: 'Mutual non-disclosure agreement for sharing prototypes and metrics.',
-    stats: { high: 1, medium: 2, low: 5 },
-    updated: 'Jan 2025',
-    sampleReport: 2
-  },
-  {
-    id: 'lease',
-    name: 'Apartment lease',
-    category: 'Housing',
-    summary: 'Standard Flemish rental agreement with yearly indexation.',
-    stats: { high: 0, medium: 3, low: 6 },
-    updated: 'Nov 2024',
-    sampleReport: 1
-  }
-]
+const contracts = ref([])
 
 const categories = [
   { label: 'All', value: 'all' },
@@ -128,7 +91,7 @@ const activeCategory = ref('all')
 
 const filteredContracts = computed(() => {
   const q = query.value.trim().toLowerCase()
-  return contracts.filter((contract) => {
+  return contracts.value.filter((contract) => {
     const matchesCategory =
       activeCategory.value === 'all' || contract.category === activeCategory.value
     const matchesQuery =
@@ -139,4 +102,15 @@ const filteredContracts = computed(() => {
     return matchesCategory && matchesQuery
   })
 })
+
+async function loadContracts() {
+  try {
+    const data = await getCommonContracts()
+    contracts.value = Array.isArray(data) ? data : []
+  } catch (err) {
+    console.error('Failed to load contracts', err)
+  }
+}
+
+onMounted(loadContracts)
 </script>
