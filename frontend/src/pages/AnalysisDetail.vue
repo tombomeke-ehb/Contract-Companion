@@ -14,7 +14,7 @@
       </div>
     </header>
 
-    <article class="card" style="margin-bottom:2rem;">
+    <article v-if="!isCommonPage" class="card" style="margin-bottom:2rem;">
       <h2 class="card-title">Add to calendar</h2>
       <p class="card-subtitle">Set a reminder to review or cancel this contract.</p>
       <div style="display:grid; gap:0.75rem; grid-template-columns:1fr 1fr; align-items:flex-end; margin-top:1rem;">
@@ -223,6 +223,7 @@ const reports = {
 
 const route = useRoute()
 const report = reports[route.params.id || '1']
+const isCommonPage = computed(() => String(route.query?.from || '') === 'common')
 
 const eventDate = ref('')
 const durationMinutes = ref(60)
