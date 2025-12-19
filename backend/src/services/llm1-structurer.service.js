@@ -16,7 +16,7 @@ const LLM1_BASE_URL = process.env.LLM1_BASE_URL || "http://localhost:8000";
  * @returns {Promise<object>} Structured JSON from LLM1.
  */
 export async function runLlm1Structurer({ text, language }) {
-  const url = `${LLM1_BASE_URL}/analyze`;
+  const url = `${LLM1_BASE_URL}/analyze-struct`;
 
   const response = await axios.post(url, {
     text,
