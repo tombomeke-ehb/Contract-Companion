@@ -7,6 +7,7 @@ import { processContractPdf } from "../services/documentOCR.service.js";
 import {
   analyzeContract,
   getContracts,
+  getContractDetail,
   getCommonContracts,
   createCommonContract,
   updateCommonContract,
@@ -64,6 +65,9 @@ router.post("/upload-raw", upload.single("file"), async (req, res) => {
 // Lijst van contracten
 // Admin ziet alles, user ziet enkel zijn eigen (placeholder)
 router.get("/", getContracts);
+
+// Detail van één contract (voor later detailweergave / debug)
+router.get("/:id", getContractDetail);
 
 // Admin-manageable "common contracts" library (admin only voor beheer)
 router.post("/common", isAdmin, createCommonContract);
