@@ -1,7 +1,8 @@
 // backend/src/controllers/contract.controller.js
 
+import fs from "fs/promises";
 import { processContractPdf } from "../services/documentOCR.service.js";
-import { createSummary } from "../services/contract.service.js";
+import { createDocumentWithSummary, listUserContracts, getContractWithSummary } from "../services/contract.service.js";
 import { analyzeContractText } from "../services/ai-orchestrator.service.js";
 import { mapLlm2ToReport } from "../services/report-mapper.service.js";
 
@@ -21,19 +22,42 @@ export async function analyzeContract(req, res) {
     const document = await processContractPdf(filePath);
     const fullText = document.text || "";
 
+    // Uploaded bestand opruimen - we bewaren enkel de tekst/AI-resultaten
+    try {
+      await fs.unlink(filePath);
+    } catch (e) {
+      console.warn("Could not delete uploaded file", e);
+    }
+
     // 2. Run new two-stage AI pipeline on the OCR text
     const aiResult = await analyzeContractText(fullText);
 
     // 3. Extract risk score from LLM2 for persistence
     const riskScore = aiResult?.llm2?.overallRiskScore ?? 5.0;
-    await createSummary({ idDoc: null, text: fullText, riskScore });
+
+    // Use the JWT payload field "id" for the current user
+    const userId = req.user?.id || null;
+    const docType = 1; // TODO: map from req.body.contractType if desired
+    const title = req.file.originalname || "Uploaded contract";
+    const description = req.body?.notes || "";
+
+    const { docId } = await createDocumentWithSummary({
+      userId,
+      docType,
+      title,
+      description,
+      fullText,
+      riskScore,
+      endDate: null,
+    });
 
     // 4. Map LLM2 output to a report shape expected by the frontend
-    const report = mapLlm2ToReport(aiResult.llm2, null);
+    const report = mapLlm2ToReport(aiResult.llm2, docId);
 
     // 5. Respond to the frontend with all building blocks
     res.json({
       success: true,
+      docId,
       ocrText: fullText,
       ai: aiResult,
       report,
@@ -49,17 +73,37 @@ export async function analyzeContract(req, res) {
 
 // Contracten ophalen
 export async function getContracts(req, res) {
-  // Admin ziet alles, user enkel eigen (voorlopige demo)
-  if (req.user.isAdmin) {
-    return res.json([
-      { id: 1, name: "Admin contract A" },
-      { id: 2, name: "Admin contract B" }
-    ]);
-  }
+  try {
+    const isAdmin = !!req.user?.isAdmin;
+    const userId = req.user?.id ?? null;
 
-  return res.json([
-    { id: 3, name: "User contract" }
-  ]);
+    const contracts = await listUserContracts({ userId, isAdmin });
+
+    res.json(contracts);
+  } catch (err) {
+    console.error("getContracts failed", err);
+    res.status(500).json({ error: "Failed to fetch contracts" });
+  }
+}
+
+export async function getContractDetail(req, res) {
+  try {
+    const { id } = req.params;
+    const numericId = Number(id);
+    if (!numericId) {
+      return res.status(400).json({ error: "Invalid contract id" });
+    }
+
+    const contract = await getContractWithSummary(numericId);
+    if (!contract) {
+      return res.status(404).json({ error: "Contract not found" });
+    }
+
+    res.json(contract);
+  } catch (err) {
+    console.error("getContractDetail failed", err);
+    res.status(500).json({ error: "Failed to fetch contract" });
+  }
 }
 
 // Database-backed admin common contracts CRUD
