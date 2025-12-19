@@ -93,11 +93,12 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useUserStore } from '../stores/userStore'
+import { getContracts as fetchContracts } from '../api/contracts'
 
-const reports = [
+const reports = ref([
   {
     id: 1,
     title: 'Employment Agreement  Tech Corp',
@@ -122,7 +123,23 @@ const reports = [
     riskLabel: 'Medium risk',
     date: '08 Jan 2025'
   }
-]
+])
+
+onMounted(async () => {
+  try {
+    const backendContracts = await fetchContracts()
+    const mapped = backendContracts.map((c) => ({
+      ...c,
+      date: typeof c.date === 'string' ? c.date : new Date(c.date).toLocaleDateString('en-GB', {
+        day: '2-digit', month: 'short', year: 'numeric'
+      })
+    }))
+
+    reports.value = [...reports.value, ...mapped]
+  } catch (e) {
+    console.error('Failed to load contracts for dashboard', e)
+  }
+})
 
 const riskFilter = ref('all')
 const monthFilter = ref('all')
@@ -134,7 +151,7 @@ const userStore = useUserStore()
 const displayName = computed(() => userStore.user?.name || userStore.user?.email || '')
 
 const filteredReports = computed(() => {
-  let filtered = reports
+  let filtered = reports.value
   if (riskFilter.value !== 'all') {
     filtered = filtered.filter((report) => report.risk === riskFilter.value)
   }
@@ -144,8 +161,8 @@ const filteredReports = computed(() => {
   return filtered
 })
 
-const highRiskCount = computed(() => reports.filter(r => r.risk === 'high').length)
-const thisMonthCount = computed(() => reports.filter(r => r.date.includes(currentMonth)).length)
+const highRiskCount = computed(() => reports.value.filter(r => r.risk === 'high').length)
+const thisMonthCount = computed(() => reports.value.filter(r => r.date.includes(currentMonth)).length)
 
 function filterRisk(risk) {
   riskFilter.value = risk
