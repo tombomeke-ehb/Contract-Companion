@@ -1,5 +1,5 @@
 <template>
-  <section class="container">
+  <section class="container" v-if="report">
     <header class="card analysis-header" style="margin-bottom:2rem;">
       <div>
         <p class="page-eyebrow">{{ report.contractType }} contract</p>
@@ -66,12 +66,16 @@
       </ol>
     </article>
   </section>
+  <section v-else class="container">
+    <p class="card-subtitle">No report data available.</p>
+  </section>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import RiskScoreCircle from '../components/RiskScoreCircle.vue'
+import { useContractStore } from '../stores/contractStore'
 
 /**
  * Get color for risk score circle based on score value
@@ -85,7 +89,12 @@ function getRiskScoreColor(score) {
   return '#ef4444' // red
 }
 
-const reports = {
+const route = useRoute()
+const contractStore = useContractStore()
+const report = ref(null)
+
+// Demo fallback reports (keep as backup if nothing is loaded)
+const demoReports = {
   '1': {
     title: 'Employment Agreement  Tech Corp',
     contractType: 'Employment',
@@ -180,12 +189,20 @@ const reports = {
   }
 }
 
-const route = useRoute()
-const report = reports[route.params.id || '1']
+onMounted(() => {
+  const id = route.params.id?.toString() || '1'
+  // Prefer report from store (set after upload), fallback to demo
+  if (contractStore.currentReport && contractStore.currentReport.id?.toString() === id) {
+    report.value = contractStore.currentReport
+  } else {
+    report.value = demoReports[id] || null
+  }
+})
 
 const riskBadgeClass = computed(() => {
-  if (report.risk === 'high') return 'badge-high'
-  if (report.risk === 'medium') return 'badge-medium'
+  if (!report.value) return ''
+  if (report.value.risk === 'high') return 'badge-high'
+  if (report.value.risk === 'medium') return 'badge-medium'
   return 'badge-low'
 })
 </script>
