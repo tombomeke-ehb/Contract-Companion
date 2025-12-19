@@ -64,3 +64,156 @@ export async function listSummaries(limit = 50) {
     riskScore: row.RISK_SCORE,
   }));
 }
+
+// Create a new document along with its summary.
+export async function createDocumentWithSummary({
+  userId,
+  docType,
+  title,
+  description,
+  fullText,
+  riskScore,
+  endDate,
+}) {
+  // 1) Insert into DOCUMENTEN with a generated ID_DOC using a sequence-less pattern
+  const insertDocSql = `
+    INSERT INTO DOCUMENTEN (ID_DOC, ID_USER, DOC_TYPE, TITEL, BESCHRIJVING, UPLOADDATUM, EIND_DATEBOOL)
+    VALUES ((SELECT NVL(MAX(ID_DOC), 0) + 1 FROM DOCUMENTEN), :userId, :docType, :title, :description, SYSDATE, :endDateBool)
+    RETURNING ID_DOC INTO :outIdDoc
+  `;
+
+  const docBinds = {
+    userId: { val: userId, type: oracledb.NUMBER },
+    docType: { val: docType, type: oracledb.NUMBER },
+    title: { val: title, type: oracledb.STRING },
+    description: { val: description, type: oracledb.STRING },
+    endDateBool: { val: endDate ? 1 : 0, type: oracledb.NUMBER },
+    outIdDoc: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
+  };
+
+  const docResult = await query(insertDocSql, docBinds, { autoCommit: true });
+  const newDocId = docResult.outBinds?.outIdDoc?.[0];
+
+  // 2) Optional insert into EINDDATUM if endDate is provided
+  if (endDate) {
+    const insertEndSql = `
+      INSERT INTO EINDDATUM (ID_DATE, ID_DOC, EIND_DATE)
+      VALUES ((SELECT NVL(MAX(ID_DATE), 0) + 1 FROM EINDDATUM), :idDoc, :endDate)
+    `;
+
+    await query(
+      insertEndSql,
+      {
+        idDoc: { val: newDocId, type: oracledb.NUMBER },
+        endDate: { val: endDate, type: oracledb.DATE },
+      },
+      { autoCommit: true }
+    );
+  }
+
+  // 3) Insert into SAMENVATTING for this document
+  const insertSummarySql = `
+    INSERT INTO SAMENVATTING (ID_DOC, TEKST, RISK_SCORE)
+    VALUES (:idDoc, :text, :riskScore)
+    RETURNING SAMENVATTING_ID INTO :outId
+  `;
+
+  const summaryBinds = {
+    idDoc: { val: newDocId, type: oracledb.NUMBER },
+    text: { val: fullText, type: oracledb.STRING },
+    riskScore: { val: riskScore, type: oracledb.NUMBER },
+    outId: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
+  };
+
+  const summaryResult = await query(insertSummarySql, summaryBinds, { autoCommit: true });
+  const newSummaryId = summaryResult.outBinds?.outId?.[0];
+
+  return {
+    docId: newDocId,
+    summaryId: newSummaryId,
+  };
+}
+
+export async function listUserContracts({ userId, isAdmin }) {
+  const sql = `
+    SELECT
+      d.ID_DOC,
+      d.TITEL,
+      d.BESCHRIJVING,
+      d.UPLOADDATUM,
+      s.RISK_SCORE,
+      u.NAME AS USER_NAME,
+      u.SURNAME AS USER_SURNAME,
+      u.EMAIL AS USER_EMAIL
+    FROM DOCUMENTEN d
+    LEFT JOIN SAMENVATTING s ON s.ID_DOC = d.ID_DOC
+    LEFT JOIN USERS u ON u.ID_USER = d.ID_USER
+    WHERE (:isAdmin = 1 OR d.ID_USER = :userId)
+    ORDER BY d.UPLOADDATUM DESC, d.ID_DOC DESC
+  `;
+
+  const binds = {
+    isAdmin: isAdmin ? 1 : 0,
+    userId: userId ?? null,
+  };
+
+  const result = await query(sql, binds);
+
+  return (result.rows || []).map((row) => {
+    const nameParts = [];
+    if (row.USER_NAME) nameParts.push(row.USER_NAME);
+    if (row.USER_SURNAME) nameParts.push(row.USER_SURNAME);
+    const displayName = nameParts.join(" ") || row.USER_EMAIL || "Unknown";
+
+    let risk = "medium";
+    let riskLabel = "Medium risk";
+    const score = row.RISK_SCORE;
+    if (typeof score === "number") {
+      if (score >= 7) {
+        risk = "high";
+        riskLabel = "High risk";
+      } else if (score <= 3) {
+        risk = "low";
+        riskLabel = "Low risk";
+      }
+    }
+
+    return {
+      id: row.ID_DOC,
+      title: row.TITEL || "Contract",
+      subtitle: `Uploaded by ${displayName}  ${row.BESCHRIJVING || ""}`.trim(),
+      riskScore: score ?? null,
+      risk,
+      riskLabel,
+      date: row.UPLOADDATUM,
+    };
+  });
+}
+
+export async function getContractWithSummary(idDoc) {
+  const sql = `
+    SELECT
+      d.ID_DOC,
+      d.TITEL,
+      d.BESCHRIJVING,
+      d.UPLOADDATUM,
+      s.TEKST,
+      s.RISK_SCORE
+    FROM DOCUMENTEN d
+    LEFT JOIN SAMENVATTING s ON s.ID_DOC = d.ID_DOC
+    WHERE d.ID_DOC = :idDoc
+  `;
+
+  const result = await query(sql, { idDoc });
+  if (!result.rows || result.rows.length === 0) return null;
+
+  const row = result.rows[0];
+  return {
+    id: row.ID_DOC,
+    title: row.TITEL || "Contract",
+    description: row.BESCHRIJVING || "",
+    uploadedAt: row.UPLOADDATUM,
+    text: row.TEKST,
+    riskScore: row.RISK_SCORE,
+  };
+}
