@@ -19,6 +19,7 @@ import Footer from './components/Footer.vue'
 import { useUserStore } from './stores/userStore'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
+import { startSessionTimeout } from '@/utils/sessionTimeout'
 
 const userStore = useUserStore()
 const router = useRouter()
