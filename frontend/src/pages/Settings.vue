@@ -307,13 +307,8 @@ const saveSettings = async () => {
     saveToStorage()
 
     // Notify the app about session timeout change so idle timer can update
-    try {
-      const ev = new CustomEvent('sessionTimeoutChanged', { detail: Number(form.sessionTimeout) })
-      window.dispatchEvent(ev)
-    } catch (e) {
-      // ignore if CustomEvent not supported
-      window.sessionTimeoutChanged = Number(form.sessionTimeout)
-    }
+    const sessionTimeoutValue = Number(form.sessionTimeout)
+    window.dispatchEvent(new CustomEvent('sessionTimeoutChanged', { detail: sessionTimeoutValue }))
   } catch (err) {
     console.error(err)
     status.value = t('settings.saveError')
