@@ -88,16 +88,19 @@
 </template>
 
 <script setup>
-import { reactive, ref, watch, onMounted } from 'vue'
+import { reactive, ref, watch, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import axios from 'axios'
+import { useAuthStore } from '../stores/authStore'
 
 import { applyTheme, persistThemeToStorage } from '../theme'
 
-const { locale, t } = useI18n()
+const API_BASE_URL = import.meta.env.VITE_API_URL
 
-// temporary user ID for demo purposes
-const userId = 1
+const { locale, t } = useI18n()
+const authStore = useAuthStore()
+
+// Get user ID from auth store, fallback to 1 if not available
+const userId = computed(() => authStore.user?.id || 1)
 
 // Keys for localStorage so we can persist across navigations
 const STORAGE_KEYS = {
@@ -155,6 +158,16 @@ const mapCodeToUi = (langCode) => (langCode === 'nl' ? 'Nederlands' : 'English')
 
 const veranderTaal = (languageLabel) => {
   locale.value = mapUiToCode(languageLabel)
+}
+
+// --- helper to get auth headers ---
+function getAuthHeaders() {
+  const token = localStorage.getItem('token')
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+  return headers
 }
 
 // --- helpers for localStorage persistence ---
@@ -221,22 +234,32 @@ watch(
 )
 
 onMounted(async () => {
-  // 1) Load from localStorage
+  // step 1: load from localStorage
   loadFromStorage()
 
-  // 2) apply settings
+  // apply immediately
   applyTheme(form.theme)
   veranderTaal(form.language)
 
-  // 3) backend sync
+  // step 2: sync with backend preferences; this overwrites only
+  // if backend has something set, otherwise keep current (possibly local) values.
   try {
-    const { data } = await axios.get(`http://localhost:3000/api/preferences/${userId}`)
+    const response = await fetch(`${API_BASE_URL}/api/preferences/${userId.value}`, {
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    })
+    if (!response.ok) throw new Error('Failed to load preferences')
+    const data = await response.json()
 
     if (data.THEME && THEME_CLASS_MAP[data.THEME]) {
       form.theme = data.THEME
     }
     if (data.LANG) {
       form.language = mapCodeToUi(data.LANG)
+    }
+    // load persisted session timeout from backend (minutes)
+    if (data.SESSION_TIMEOUT) {
+      form.sessionTimeout = String(data.SESSION_TIMEOUT)
     }
 
     applyTheme(form.theme)
@@ -268,13 +291,24 @@ const saveSettings = async () => {
 
   const payload = {
     theme: form.theme,
-    language: mapUiToCode(form.language)
+    language: mapUiToCode(form.language),
+    sessionTimeout: Number(form.sessionTimeout)
   }
 
   try {
-    await axios.put(`http://localhost:3000/api/preferences/${userId}`, payload)
+    const response = await fetch(`${API_BASE_URL}/api/preferences/${userId.value}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+      credentials: 'include'
+    })
+    if (!response.ok) throw new Error('Failed to save preferences')
     status.value = t('settings.savedStatus')
     saveToStorage()
+
+    // Notify the app about session timeout change so idle timer can update
+    const sessionTimeoutValue = Number(form.sessionTimeout)
+    window.dispatchEvent(new CustomEvent('sessionTimeoutChanged', { detail: sessionTimeoutValue }))
   } catch (err) {
     console.error(err)
     status.value = t('settings.saveError')
