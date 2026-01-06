@@ -231,6 +231,7 @@ const calendarError = ref('')
 const calendarSuccess = ref('')
 const downloading = ref(false)
 
+// Prepare event payload for calendar links and ICS files
 const eventPayload = computed(() => {
   if (!eventDate.value) return null
   const start = new Date(eventDate.value)
@@ -251,6 +252,7 @@ const googleLink = computed(() => {
   return buildGoogleCalendarUrl(eventPayload.value)
 })
 
+// Download ICS file on client side
 function downloadClientIcs() {
   calendarError.value = ''
   calendarSuccess.value = ''
@@ -263,7 +265,7 @@ function downloadClientIcs() {
     calendarSuccess.value = 'ICS file downloaded.'
   }
 }
-
+// Download ICS file from server
 async function downloadServerIcs() {
   calendarError.value = ''
   calendarSuccess.value = ''

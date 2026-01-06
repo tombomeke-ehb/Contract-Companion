@@ -5,10 +5,10 @@ import { listPeople, createPerson, deletePerson } from "../services/user.service
 
 const router = express.Router();
 
-// Alle people-routes zijn enkel toegankelijk voor admins
+// All routes in this file require authentication and admin privileges
 router.use(authenticate, isAdmin);
 
-// GET /api/people - Haal alle gebruikers op
+// GET /api/people - get all users
 router.get("/", async (req, res) => {
   try {
     const people = await listPeople();
@@ -20,7 +20,7 @@ router.get("/", async (req, res) => {
       surname: person.SURNAME,
       email: person.EMAIL,
       isAdmin: person.ISADMIN === 1,
-      date: new Date().toISOString().split('T')[0] // Placeholder, kan later uit database komen
+      date: new Date().toISOString().split('T')[0] // Placeholder, as Oracle doesn't provide creation date
     }));
 
     res.json(formattedPeople);
@@ -30,20 +30,20 @@ router.get("/", async (req, res) => {
   }
 });
 
-// POST /api/people - Maak een nieuwe gebruiker aan
+// POST /api/people - makes an new user
 router.post("/", async (req, res) => {
   try {
     const { name, surname, email, password, isAdmin = false } = req.body;
 
-    // Validatie
+    // Validation
     if (!name || !email || !password) {
       return res.status(400).json({ error: "Name, email, and password are required" });
     }
 
-    // Hash het wachtwoord
+    // Hash the password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Maak de gebruiker aan
+    // makes the new user
     const newId = await createPerson({
       name,
       surname: surname || name,
@@ -52,7 +52,7 @@ router.post("/", async (req, res) => {
       isAdmin: isAdmin ? 1 : 0
     });
 
-    // Stuur de nieuwe gebruiker terug
+    // Send the new user data as response
     res.status(201).json({
       id: newId,
       name,
@@ -67,12 +67,12 @@ router.post("/", async (req, res) => {
   }
 });
 
-// PUT /api/people/:id - Update een gebruiker
+// PUT /api/people/:id - Update an user
 router.put("/:id", async (req, res) => {
   res.json({ message: "Update person (admin only)" });
 });
 
-// DELETE /api/people/:id - Verwijder een gebruiker
+// DELETE /api/people/:id - delete an user
 router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;

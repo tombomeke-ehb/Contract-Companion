@@ -108,7 +108,7 @@ const form = reactive({
 
 const isSubmitting = ref(false)
 const error = ref('')
-
+// Signup handler
 const handleSignup = async () => {
   if (!form.name || !form.surname || !form.email || form.password.length < 8) {
     error.value = 'Please fill in all fields (including surname, password needs 8+ characters).'
@@ -121,7 +121,7 @@ const handleSignup = async () => {
   try {
     const data = await auth.signup(form)
 
-    // Sla user-state op in de globale store
+    // Set user in store
     if (data.user) {
       userStore.setUser(data.user)
     }
@@ -133,7 +133,7 @@ const handleSignup = async () => {
     isSubmitting.value = false
   }
 }
-
+// Continue with Google handler (mock)
 const continueWithGoogle = () => {
   router.push({ name: 'dashboard' })
 }

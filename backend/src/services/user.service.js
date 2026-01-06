@@ -50,7 +50,7 @@ export async function createUser(name, email, hashedPassword, surname = null) {
 // ==============================
 // Admin dashboard functions
 // ==============================
-
+//query to list all users
 export async function listPeople() {
   const result = await query(
     `SELECT ID_USER, NAME, SURNAME, EMAIL, ISADMIN

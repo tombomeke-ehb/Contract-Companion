@@ -17,16 +17,16 @@ export async function analyzeContract(req, res) {
 
     const filePath = req.file.path;
 
-    // OCR uitvoeren
+    // OCR execute
     const document = await processContractPdf(filePath);
     const fullText = document.text || "";
 
-    // AI analyse uitvoeren
+    // AI analyse execute
     const aiResult = await AI.analyzeContract(filePath, fullText);
 
     const riskScore = aiResult?.riskScore ?? 5.0;
 
-    // Samenvatting opslaan (later koppelen aan user)
+    // summary saving
     await createSummary({
       idDoc: null,
       text: fullText,
@@ -47,9 +47,9 @@ export async function analyzeContract(req, res) {
   }
 }
 
-// Contracten ophalen
+// fetching contracts
 export async function getContracts(req, res) {
-  // Admin ziet alles, user enkel eigen (voorlopige demo)
+  // Admin sees all contracts, normal users only theirs
   if (req.user.isAdmin) {
     return res.json([
       { id: 1, name: "Admin contract A" },
@@ -92,7 +92,7 @@ export async function createCommonContract(req, res) {
     res.status(500).json({ error: 'Failed to create contract' });
   }
 }
-
+// Update common contract
 export async function updateCommonContract(req, res) {
   try {
     const { id } = req.params;
@@ -108,7 +108,7 @@ export async function updateCommonContract(req, res) {
     res.status(500).json({ error: 'Failed to update contract' });
   }
 }
-
+// Delete common contract
 export async function deleteCommonContract(req, res) {
   try {
     const { id } = req.params;

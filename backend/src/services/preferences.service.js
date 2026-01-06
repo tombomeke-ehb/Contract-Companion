@@ -1,5 +1,5 @@
 import db from "../config/db.js";
-
+// Service to manage user preferences
 export async function findByUserId(userId) {
   const sql = `
     SELECT PREF_ID, ID_USER, THEME, LANG, REGION
@@ -13,7 +13,7 @@ export async function findByUserId(userId) {
 
   return result.rows[0];
 }
-
+// Update or insert user preferences
 export async function updateForUser(userId, { theme, language, region }) {
   const updateSql = `
     UPDATE PREFERENCES
