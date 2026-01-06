@@ -1,4 +1,5 @@
 // backend/src/app.js
+// Main application setup for the backend server
 
 import express from "express";
 import cors from "cors";
@@ -8,6 +9,7 @@ import userRoutes from "./routes/user.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import preferenceRoutes from "./routes/preference.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
+import calendarRoutes from "./routes/calendar.routes.js";
 
 
 import peopleRoutes from "./routes/people.routes.js";
@@ -50,5 +52,6 @@ app.use("/api/auth", authRoutes);
 app.use("/api/preferences", preferenceRoutes);
 app.use("/api", adminRoutes);
 app.use("/api/people", peopleRoutes);
+app.use("/api", calendarRoutes);
 
 export default app;

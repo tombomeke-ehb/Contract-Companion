@@ -1,7 +1,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 async function request(path, options = {}) {
-  // Haal het token op uit localStorage
+  // Get the token from localStorage
   const token = localStorage.getItem('token');
 
   const headers = {
@@ -9,7 +9,7 @@ async function request(path, options = {}) {
     ...(options.headers || {}),
   };
 
-  // Voeg Authorization header toe als er een token is
+  // Include the Authorization header if the token exists
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }

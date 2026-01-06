@@ -15,6 +15,7 @@ import Terms from '../pages/Terms.vue'
 import Docs from '../pages/Docs.vue'
 import Contact from '../pages/Contact.vue'
 import Security from '../pages/Security.vue'
+import { useAuthStore } from '../stores/authStore'
 
 const routes = [
   { path: '/', name: 'home', component: Home },
@@ -35,13 +36,43 @@ const routes = [
   { path: '/terms', name: 'terms', component: Terms },
   { path: '/contact', name: 'contact', component: Contact },
   { path: '/security', name: 'security', component: Security },
-  { path: '/admin', name: 'admin-dashboard', component: () => import('../pages/AdminDashboard.vue') },
-  { path: '/admin/common-contracts', name: 'admin-common-contracts', component: () => import('../pages/AdminCommonContracts.vue') },
+  {
+    path: '/admin',
+    name: 'admin-dashboard',
+    component: () => import('../pages/AdminDashboard.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: '/admin/common-contracts',
+    name: 'admin-common-contracts',
+    component: () => import('../pages/AdminCommonContracts.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
 ]
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
+})
+
+router.beforeEach((to, from, next) => {
+  const authStore = useAuthStore()
+
+  // Lazy init from localStorage if needed
+  if (!authStore.token && !authStore.user) {
+    authStore.initFromStorage()
+  }
+
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    return next({ name: 'login', query: { redirect: to.fullPath } })
+  }
+
+  if (to.meta.requiresAdmin && !authStore.isAdmin) {
+    // User is logged in but not admin: send to home
+    return next({ name: 'home' })
+  }
+
+  return next()
 })
 
 export default router

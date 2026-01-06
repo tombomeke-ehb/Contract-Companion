@@ -53,7 +53,7 @@ const userStore = useUserStore()
 
 const email = ref('')
 const password = ref('')
-
+// Login function
 const onLogin = async () => {
   try {
     const data = await authApi.login({
@@ -61,10 +61,10 @@ const onLogin = async () => {
       password: password.value
     })
 
-    // Sla user-state op in de globale store
+    // saves user in store
     userStore.setUser(data.user)
 
-    // Redirect naar admin-dashboard als admin, anders gewone dashboard
+    // Redirect to appropriate dashboard --> admin or user
     const redirectName = userStore.isAdmin ? 'admin-dashboard' : 'dashboard'
     router.push({ name: redirectName })
   } catch (err) {

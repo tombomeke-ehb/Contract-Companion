@@ -23,12 +23,12 @@ async function login(credentials) {
 
   const data = await res.json();
 
-  // JWT-token opslaan voor beveiligde requests
+  // JWT-token save for secured requests
   if (data.token) {
     localStorage.setItem("token", data.token);
   }
 
-  // Optioneel: user-info opslaan
+  // Optional: user-info save
   if (data.user) {
     localStorage.setItem("user", JSON.stringify(data.user));
   }
@@ -55,12 +55,12 @@ async function signup(userData) {
 
   const data = await res.json();
 
-  // JWT-token opslaan voor beveiligde requests
+  // JWT-token save for secured requests
   if (data.token) {
     localStorage.setItem("token", data.token);
   }
 
-  // Optioneel: user-info opslaan
+  // Optional: user-info save
   if (data.user) {
     localStorage.setItem("user", JSON.stringify(data.user));
   }
@@ -69,7 +69,7 @@ async function signup(userData) {
 }
 
 function logout() {
-  // Token en user-info verwijderen bij logout
+  // Token and user-info deletion for logout
   localStorage.removeItem("token");
   localStorage.removeItem("user");
 }

@@ -14,6 +14,45 @@
       </div>
     </header>
 
+    <article v-if="!isCommonPage" class="card" style="margin-bottom:2rem;">
+      <h2 class="card-title">Add to calendar</h2>
+      <p class="card-subtitle">Set a reminder to review or cancel this contract.</p>
+      <div style="display:grid; gap:0.75rem; grid-template-columns:1fr 1fr; align-items:flex-end; margin-top:1rem;">
+        <div class="form-group" style="margin:0;">
+          <label class="label">Start date & time</label>
+          <input v-model="eventDate" type="datetime-local" class="input" />
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="label">Duration (minutes)</label>
+          <input v-model.number="durationMinutes" type="number" min="15" class="input" />
+        </div>
+      </div>
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:1rem;">
+        <a
+          class="btn btn-outline"
+          :href="googleLink || 'javascript:void(0)'"
+          target="_blank"
+          rel="noopener"
+          :aria-disabled="!googleLink"
+          :style="!googleLink ? 'pointer-events:none; opacity:0.6;' : ''"
+        >
+          Add to Google Calendar
+        </a>
+        <button class="btn btn-outline" type="button" :disabled="!eventPayload" @click="downloadClientIcs">
+          Download .ics (client)
+        </button>
+        <button class="btn btn-outline" type="button" :disabled="!eventPayload || downloading" @click="downloadServerIcs">
+          {{ downloading ? 'Downloading...' : 'Download .ics (server)' }}
+        </button>
+        <p v-if="calendarError" class="card-subtitle" style="color:var(--danger); margin:0;">
+          {{ calendarError }}
+        </p>
+        <p v-else-if="calendarSuccess" class="card-subtitle" style="color:var(--success); margin:0;">
+          {{ calendarSuccess }}
+        </p>
+      </div>
+    </article>
+
     <div style="margin-bottom:2rem;">
       <div class="card" style="background:#f9fafb; margin-bottom:0;">
         <h2 class="card-title" style="font-size:1.1rem; margin-bottom:0.5rem;">Summary</h2>
@@ -69,9 +108,11 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import RiskScoreCircle from '../components/RiskScoreCircle.vue'
+import { buildGoogleCalendarUrl, downloadIcsClient } from '../utils/calendar'
+import { downloadServerIcs as downloadServerIcsApi } from '../api/calendar'
 
 /**
  * Get color for risk score circle based on score value
@@ -182,6 +223,66 @@ const reports = {
 
 const route = useRoute()
 const report = reports[route.params.id || '1']
+const isCommonPage = computed(() => String(route.query?.from || '') === 'common')
+
+const eventDate = ref('')
+const durationMinutes = ref(60)
+const calendarError = ref('')
+const calendarSuccess = ref('')
+const downloading = ref(false)
+
+// Prepare event payload for calendar links and ICS files
+const eventPayload = computed(() => {
+  if (!eventDate.value) return null
+  const start = new Date(eventDate.value)
+  if (Number.isNaN(start.getTime())) return null
+  const durationMs = Math.max(15, Number(durationMinutes.value) || 60) * 60 * 1000
+  const end = new Date(start.getTime() + durationMs)
+  return {
+    title: `${report.title} review`,
+    description: report.summary || report.keySummary,
+    location: '',
+    start: start.toISOString(),
+    end: end.toISOString(),
+  }
+})
+
+const googleLink = computed(() => {
+  if (!eventPayload.value) return ''
+  return buildGoogleCalendarUrl(eventPayload.value)
+})
+
+// Download ICS file on client side
+function downloadClientIcs() {
+  calendarError.value = ''
+  calendarSuccess.value = ''
+  if (!eventPayload.value) {
+    calendarError.value = 'Choose a date and duration first.'
+    return
+  }
+  const ok = downloadIcsClient(eventPayload.value)
+  if (ok) {
+    calendarSuccess.value = 'ICS file downloaded.'
+  }
+}
+// Download ICS file from server
+async function downloadServerIcs() {
+  calendarError.value = ''
+  calendarSuccess.value = ''
+  if (!eventPayload.value) {
+    calendarError.value = 'Choose a date and duration first.'
+    return
+  }
+  try {
+    downloading.value = true
+    await downloadServerIcsApi(eventPayload.value)
+    calendarSuccess.value = 'ICS file downloaded from server.'
+  } catch (err) {
+    calendarError.value = err?.message || 'Download failed'
+  } finally {
+    downloading.value = false
+  }
+}
 
 const riskBadgeClass = computed(() => {
   if (report.risk === 'high') return 'badge-high'

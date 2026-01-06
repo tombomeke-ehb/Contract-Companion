@@ -3,7 +3,7 @@ import preferenceService from "../services/preference.service.js";
 export async function getPreferences(req, res) {
   const userId = req.params.userId;
 
-  // Alleen eigen preferences bekijken, tenzij admin
+  // only own preferences, unless admin
   if (!req.user?.isAdmin && String(req.user?.id) !== String(userId)) {
     return res.status(403).json({ error: "Forbidden" });
   }
@@ -21,7 +21,7 @@ export async function updatePreferences(req, res) {
   const userId = req.params.userId;
   const { theme, lang } = req.body;
 
-  // Alleen eigen preferences wijzigen, tenzij admin
+  // only own preferences, unless admin
   if (!req.user?.isAdmin && String(req.user?.id) !== String(userId)) {
     return res.status(403).json({ error: "Forbidden" });
   }

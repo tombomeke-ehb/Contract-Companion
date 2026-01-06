@@ -1,6 +1,7 @@
 import * as preferenceService from "../services/preferences.service.js";
 // GET /api/preferences/:userId
 // PUT /api/preferences/:userId
+// import other necessary modules if needed
 export async function getPreferencesForUser(req, res, next) {
   try {
     const userId = Number(req.params.userId);

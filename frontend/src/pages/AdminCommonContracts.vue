@@ -55,7 +55,7 @@
           <div class="card-subtitle" style="margin-right:auto;">Updated {{ contract.updated }}</div>
           <RouterLink
             class="btn btn-outline"
-            :to="{ name: 'report-detail', params: { id: contract.sampleReport } }"
+            :to="{ name: 'report-detail', params: { id: contract.sampleReport }, query: { from: 'common' } }"
           >
             View analysis
           </RouterLink>
@@ -155,7 +155,7 @@ const form = reactive({
   updated: '',
   sampleReport: 1,
 })
-
+ // Filtering logic
 const filteredContracts = computed(() => {
   const q = query.value.trim().toLowerCase()
   return contracts.value.filter((contract) => {
@@ -169,7 +169,7 @@ const filteredContracts = computed(() => {
     return matchesCategory && matchesQuery
   })
 })
-
+// Load contracts from API
 async function loadContracts() {
   try {
     errorMessage.value = ''
@@ -216,7 +216,7 @@ function openEditModal(contract) {
 function closeModal() {
   showModal.value = false
 }
-
+// Save contract (add or edit)
 async function saveContract() {
   try {
     submitting.value = true
@@ -247,7 +247,7 @@ async function saveContract() {
     submitting.value = false
   }
 }
-
+// Delete contract
 async function onDelete(id) {
   if (!confirm('Delete this contract?')) return
   try {

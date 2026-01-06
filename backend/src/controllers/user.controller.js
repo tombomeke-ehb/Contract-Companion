@@ -11,7 +11,7 @@ const SALT_ROUNDS = 10;
 function formatDisplayDate(date = new Date()) {
 	return date.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" });
 }
-
+// Maps database row to person object
 function mapPerson(row) {
 	return {
 		id: String(row.ID_USER),
@@ -24,7 +24,7 @@ function mapPerson(row) {
 		date: formatDisplayDate(),
 	};
 }
-
+// Controller functions
 export async function listPeople(_req, res) {
 	try {
 		const rows = await listPeopleDb();
@@ -34,7 +34,7 @@ export async function listPeople(_req, res) {
 		return res.status(500).json({ message: "Failed to fetch people." });
 	}
 }
-
+// Function to create a new person
 export async function createPerson(req, res) {
 	const { name, surname = "", email, password, isAdmin = 0 } = req.body;
 
@@ -59,7 +59,7 @@ export async function createPerson(req, res) {
 		return res.status(500).json({ message: "Failed to create person." });
 	}
 }
-
+// Function to delete a person by ID
 export async function deletePerson(req, res) {
 	const { id } = req.params;
 
