@@ -14,6 +14,7 @@ const messages = {
       saving: 'Saving...',
       cancel: 'Cancel',
       savedStatus: 'Settings saved successfully.',
+      saveError: 'Failed to save settings. Please try again.',
       applicationSettings: 'Application settings',
       language: 'Language',
       languageEnglish: 'English',
@@ -123,6 +124,7 @@ const messages = {
       saving: 'Bezig met opslaan...',
       cancel: 'Annuleren',
       savedStatus: 'Instellingen succesvol opgeslagen.',
+      saveError: 'Instellingen konden niet worden opgeslagen. Probeer het opnieuw.',
 
       applicationSettings: 'Applicatie-instellingen',
       language: 'Taal',
