@@ -706,7 +706,7 @@ html.theme-dark .menu-toggle-icon span {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  pointer-events: none;
+  pointer-events: none;   
 }
 
 .toast {
