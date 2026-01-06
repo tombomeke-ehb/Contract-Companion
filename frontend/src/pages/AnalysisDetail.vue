@@ -15,6 +15,21 @@
     </header>
 
     <article v-if="!isCommonPage" class="card" style="margin-bottom:2rem;">
+      <h2 class="card-title">Contract Duration</h2>
+      <p class="card-subtitle">Start and end dates of the contract.</p>
+      <div style="display:grid; gap:0.75rem; grid-template-columns:1fr 1fr; align-items:flex-end; margin-top:1rem;">
+        <div class="form-group" style="margin:0;">
+          <label class="label">Contract Start Date & Time</label>
+          <input v-model="contractStartDate" type="datetime-local" class="input" />
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="label">Contract End Date & Time</label>
+          <input v-model="contractEndDate" type="datetime-local" class="input" />
+        </div>
+      </div>
+    </article>
+
+    <article v-if="!isCommonPage" class="card" style="margin-bottom:2rem;">
       <h2 class="card-title">Add to calendar</h2>
       <p class="card-subtitle">Set a reminder to review or cancel this contract.</p>
       <div style="display:grid; gap:0.75rem; grid-template-columns:1fr 1fr; align-items:flex-end; margin-top:1rem;">
@@ -225,6 +240,8 @@ const route = useRoute()
 const report = reports[route.params.id || '1']
 const isCommonPage = computed(() => String(route.query?.from || '') === 'common')
 
+const contractStartDate = ref('')
+const contractEndDate = ref('')
 const eventDate = ref('')
 const durationMinutes = ref(60)
 const calendarError = ref('')
