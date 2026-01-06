@@ -88,16 +88,19 @@
 </template>
 
 <script setup>
-import { reactive, ref, watch, onMounted } from 'vue'
+import { reactive, ref, watch, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import axios from 'axios'
+import { useAuthStore } from '../stores/authStore'
 
 import { applyTheme, persistThemeToStorage } from '../theme'
 
-const { locale, t } = useI18n()
+const API_BASE_URL = import.meta.env.VITE_API_URL
 
-// temporary user ID for demo purposes
-const userId = 1
+const { locale, t } = useI18n()
+const authStore = useAuthStore()
+
+// Get user ID from auth store, fallback to 1 if not available
+const userId = computed(() => authStore.user?.id || 1)
 
 // Keys for localStorage so we can persist across navigations
 const STORAGE_KEYS = {
@@ -155,6 +158,16 @@ const mapCodeToUi = (langCode) => (langCode === 'nl' ? 'Nederlands' : 'English')
 
 const veranderTaal = (languageLabel) => {
   locale.value = mapUiToCode(languageLabel)
+}
+
+// --- helper to get auth headers ---
+function getAuthHeaders() {
+  const token = localStorage.getItem('token')
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+  return headers
 }
 
 // --- helpers for localStorage persistence ---
@@ -225,13 +238,18 @@ onMounted(async () => {
   loadFromStorage()
 
   // apply immediately
-  veranderThema(form.theme)
+  applyTheme(form.theme)
   veranderTaal(form.language)
 
   // step 2: sync with backend preferences; this overwrites only
   // if backend has something set, otherwise keep current (possibly local) values.
   try {
-    const { data } = await axios.get(`http://localhost:3000/api/preferences/${userId}`)
+    const response = await fetch(`${API_BASE_URL}/api/preferences/${userId.value}`, {
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    })
+    if (!response.ok) throw new Error('Failed to load preferences')
+    const data = await response.json()
 
     if (data.THEME && THEME_CLASS_MAP[data.THEME]) {
       form.theme = data.THEME
@@ -278,7 +296,13 @@ const saveSettings = async () => {
   }
 
   try {
-    await axios.put(`http://localhost:3000/api/preferences/${userId}`, payload)
+    const response = await fetch(`${API_BASE_URL}/api/preferences/${userId.value}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+      credentials: 'include'
+    })
+    if (!response.ok) throw new Error('Failed to save preferences')
     status.value = t('settings.savedStatus')
     saveToStorage()
 

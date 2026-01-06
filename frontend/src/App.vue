@@ -17,15 +17,25 @@ import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import Navbar from './components/Navbar.vue'
 import Footer from './components/Footer.vue'
 import { useUserStore } from './stores/userStore'
-import axios from 'axios'
 import { useRouter } from 'vue-router'
-import { startSessionTimeout } from '@/utils/sessionTimeout'
+
+const API_BASE_URL = import.meta.env.VITE_API_URL
 
 const userStore = useUserStore()
 const router = useRouter()
 
 const sessionTimeoutMinutes = ref(30)
 let idleTimer = null
+
+// --- helper to get auth headers ---
+function getAuthHeaders() {
+  const token = localStorage.getItem('token')
+  const headers = {}
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+  return headers
+}
 
 function clearIdleTimer() {
   if (idleTimer) {
@@ -60,16 +70,30 @@ function removeActivityListeners() {
   events.forEach((ev) => window.removeEventListener(ev, resetIdleTimer))
 }
 
-// Load user state from localStorage on app mount
+
+function sessionListener(e) {
+  const val = Number(e?.detail ?? window.sessionTimeoutChanged ?? sessionTimeoutMinutes.value)
+  if (!isNaN(val) && val > 0) {
+    sessionTimeoutMinutes.value = val
+    scheduleIdleLogout()
+  }
+}
+
 onMounted(async () => {
   userStore.loadFromStorage()
 
   // If a user is already logged in, fetch their preferences to get session timeout
   if (userStore.user?.id) {
     try {
-      const { data } = await axios.get(`http://localhost:3000/api/preferences/${userStore.user.id}`)
-      if (data?.SESSION_TIMEOUT) {
-        sessionTimeoutMinutes.value = Number(data.SESSION_TIMEOUT)
+      const response = await fetch(
+        `${API_BASE_URL}/api/preferences/${userStore.user.id}`,
+        { headers: getAuthHeaders(), credentials: 'include' }
+      )
+      if (response.ok) {
+        const data = await response.json()
+        if (data?.SESSION_TIMEOUT) {
+          sessionTimeoutMinutes.value = Number(data.SESSION_TIMEOUT)
+        }
       }
     } catch (err) {
       // ignore - fallback to default
@@ -83,41 +107,40 @@ onMounted(async () => {
   }
 
   // Listen for settings changes (session timeout updates)
-  const sessionListener = (e) => {
-    const val = Number(e?.detail ?? window.sessionTimeoutChanged ?? sessionTimeoutMinutes.value)
-    if (!isNaN(val) && val > 0) {
-      sessionTimeoutMinutes.value = val
-      scheduleIdleLogout()
-    }
-  }
-
   window.addEventListener('sessionTimeoutChanged', sessionListener)
 })
+
 
 onBeforeUnmount(() => {
   clearIdleTimer()
   removeActivityListeners()
   window.removeEventListener('sessionTimeoutChanged', sessionListener)
 })
-onBeforeUnmount(() => {
-  clearIdleTimer()
-  removeActivityListeners()
-})
 
 // If the user logs in/out later, add/remove listeners and (re)schedule
-watch(() => userStore.user, (newUser) => {
-  clearIdleTimer()
-  removeActivityListeners()
-  if (newUser) {
-    // try to fetch user preferences
-    axios.get(`http://localhost:3000/api/preferences/${newUser.id}`).then(({ data }) => {
-      if (data?.SESSION_TIMEOUT) sessionTimeoutMinutes.value = Number(data.SESSION_TIMEOUT)
-      scheduleIdleLogout()
-      addActivityListeners()
-    }).catch(() => {
-      scheduleIdleLogout()
-      addActivityListeners()
-    })
+watch(
+  () => userStore.user,
+  (newUser) => {
+    clearIdleTimer()
+    removeActivityListeners()
+
+    if (newUser) {
+      // try to fetch user preferences
+      fetch(`${API_BASE_URL}/api/preferences/${newUser.id}`, { 
+        headers: getAuthHeaders(),
+        credentials: 'include' 
+      })
+        .then(response => response.ok ? response.json() : Promise.reject())
+        .then(data => {
+          if (data?.SESSION_TIMEOUT) sessionTimeoutMinutes.value = Number(data.SESSION_TIMEOUT)
+          scheduleIdleLogout()
+          addActivityListeners()
+        })
+        .catch(() => {
+          scheduleIdleLogout()
+          addActivityListeners()
+        })
+    }
   }
-})
+)
 </script>
