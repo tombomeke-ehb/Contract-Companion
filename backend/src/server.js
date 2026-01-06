@@ -10,6 +10,7 @@ import https from "https";
 import app from "./app.js";
 import * as db from "./config/db.js";
 
+// Standaard HTTP-poort (3000) en optionele HTTPS-poort (3443)
 const PORT = process.env.PORT || 3000;
 const HTTPS_PORT = process.env.HTTPS_PORT || 3443;
 // Function to create HTTP or HTTPS server based on environment variables
@@ -28,12 +29,15 @@ function createServer() {
   return { server: http.createServer(app), port: PORT, protocol: "http" };
 }
 
+// Startpunt van de backend: eerst DB-connectie, dan HTTP/HTTPS-server opstarten
 async function start() {
   try {
-    await db.connect(); // connect the Oracle DB
+    // Maak verbinding met de Oracle-database vóór de server requests gaat verwerken
+    await db.connect();
     console.log("✅ Oracle DB connected");
 
     const { server, port, protocol } = createServer();
+    // Start de server en log duidelijk onder welk protocol en poort hij draait
     server.listen(port, () => {
       console.log(`Backend running at ${protocol}://localhost:${port}`);
     });

@@ -54,7 +54,7 @@
     </article>
 
     <div style="margin-bottom:2rem;">
-      <div class="card" style="background:#f9fafb; margin-bottom:0;">
+      <div class="card" style="margin-bottom:0;">
         <h2 class="card-title" style="font-size:1.1rem; margin-bottom:0.5rem;">Summary</h2>
         <p style="font-size:1rem; color:var(--text);">
           {{ report.humanSummary }}
