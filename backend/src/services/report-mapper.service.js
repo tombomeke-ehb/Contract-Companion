@@ -1,4 +1,4 @@
-// backend/src/services/report-mapper.service.js
+  // backend/src/services/report-mapper.service.js
 // Helper to map the LLM2 legal analysis output into the "report" shape
 // expected by the Vue pages (AnalysisDetail.vue, Dashboard.vue).
 
