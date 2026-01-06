@@ -136,7 +136,7 @@ const form = reactive({ name: '', surname: '', email: '', password: '' })
 const loading = ref(false)
 const submitting = ref(false)
 const errorMessage = ref('')
-
+// Load people from API
 const loadPeople = async () => {
   loading.value = true
   errorMessage.value = ''
@@ -150,7 +150,7 @@ const loadPeople = async () => {
     loading.value = false
   }
 }
-
+// Add new person
 const addPerson = async () => {
   submitting.value = true
   errorMessage.value = ''
@@ -174,7 +174,7 @@ const addPerson = async () => {
     submitting.value = false
   }
 }
-
+// Delete person
 const deletePerson = async (personId) => {
   try {
     await deletePersonAPI(personId)
@@ -182,9 +182,7 @@ const deletePerson = async (personId) => {
     // Remove from local array
     const index = people.value.findIndex(p => p.id === personId)
     if (index > -1) {
-      const deletedPerson = people.value[index]
       people.value.splice(index, 1)
-      console.log(`Deleted person: ${deletedPerson.name} (ID: ${personId})`)
     }
   } catch (error) {
     console.error('Failed to delete person:', error)

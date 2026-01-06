@@ -47,9 +47,13 @@ import { ref } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import authApi from '@/api/auth'
 import { useUserStore } from '@/stores/userStore'
+import { useNotificationStore } from '@/stores/notificationStore'
+import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
 const userStore = useUserStore()
+const notifications = useNotificationStore()
+const { t } = useI18n()
 
 const email = ref('')
 const password = ref('')
@@ -61,17 +65,18 @@ const onLogin = async () => {
       password: password.value
     })
 
-    // Sla user-state op in de globale store
     userStore.setUser(data.user)
 
-    // Redirect naar admin-dashboard als admin, anders gewone dashboard
+    const name = data.user?.name || data.user?.email || ''
+    notifications.push({
+      title: t('toast.welcome', { name }),
+      variant: 'success'
+    })
+
     const redirectName = userStore.isAdmin ? 'admin-dashboard' : 'dashboard'
     router.push({ name: redirectName })
   } catch (err) {
-    alert(
-      err?.error ||
-      'Invalid email or password'
-    )
+    alert(err?.error || 'Invalid email or password')
   }
 }
 </script>

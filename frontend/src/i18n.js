@@ -1,5 +1,6 @@
 import { createI18n } from 'vue-i18n'
 
+// Define translation messages
 const messages = {
   en: {
     settings: {
@@ -13,6 +14,7 @@ const messages = {
       saving: 'Saving...',
       cancel: 'Cancel',
       savedStatus: 'Settings saved successfully.',
+      saveError: 'Failed to save settings. Please try again.',
       applicationSettings: 'Application settings',
       language: 'Language',
       languageEnglish: 'English',
@@ -102,10 +104,16 @@ const messages = {
       commonContracts: 'Common Contracts',
       login: 'Login',
       signup: 'Sign Up',
-      logout: 'Logout'
+      logout: 'Logout',
+      openMenu: 'Open menu',
+      closeMenu: 'Close menu'
     },
-
-
+    toast: {
+      welcome: 'Welcome, {name}',
+      goodbye: 'Goodbye, {name}',
+      loggedOutTitle: 'Logged out',
+      loggedOutBody: 'You have been logged out.'
+    }
   },
   nl: {
     settings: {
@@ -120,6 +128,7 @@ const messages = {
       saving: 'Bezig met opslaan...',
       cancel: 'Annuleren',
       savedStatus: 'Instellingen succesvol opgeslagen.',
+      saveError: 'Instellingen konden niet worden opgeslagen. Probeer het opnieuw.',
 
       applicationSettings: 'Applicatie-instellingen',
       language: 'Taal',
@@ -144,7 +153,7 @@ const messages = {
       notifications: 'Meldingen'
     },
     dashboard: {
-      welcomeBack: 'Welkom terug, John',
+      welcomeBack: 'Welkom terug',
       subtitle: 'Dit is de huidige status van je contracten.',
       uploadNewContract: 'Nieuw contract uploaden',
 
@@ -210,8 +219,16 @@ const messages = {
       commonContracts: 'Standaardcontracten',
       login: 'Inloggen',
       signup: 'Registreren',
-      logout: 'Uitloggen'
+      logout: 'Uitloggen',
+      openMenu: 'Menu openen',
+      closeMenu: 'Menu sluiten'
     },
+    toast: {
+      welcome: 'Welkom, {name}',
+      goodbye: 'Tot ziens, {name}',
+      loggedOutTitle: 'Uitgelogd',
+      loggedOutBody: 'Je bent uitgelogd.'
+    }
   }
 }
 

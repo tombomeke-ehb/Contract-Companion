@@ -55,7 +55,7 @@
           <div class="card-subtitle" style="margin-right:auto;">Updated {{ contract.updated }}</div>
           <RouterLink
             class="btn btn-outline"
-            :to="{ name: 'report-detail', params: { id: contract.sampleReport } }"
+            :to="{ name: 'report-detail', params: { id: contract.sampleReport }, query: { from: 'common' } }"
           >
             View analysis
           </RouterLink>
@@ -70,48 +70,50 @@
     </div>
 
     <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
-      <div class="modal-content card" style="max-width:560px;">
+      <div class="modal-content card" style="max-width:800px; width:95%; max-height:90vh; overflow-x:hidden; overflow-y:auto; box-sizing:border-box;">
         <h2 class="card-title" style="margin-bottom:1rem;">{{ isEditing ? 'Edit contract' : 'Add contract' }}</h2>
-        <form @submit.prevent="saveContract" class="form" style="display:grid; gap:0.75rem;">
-          <div class="form-group">
+        <form @submit.prevent="saveContract" class="form" style="display:grid; gap:0.75rem; box-sizing:border-box;">
+          <div class="form-group" style="box-sizing:border-box;">
             <label class="label">Name</label>
-            <input v-model="form.name" class="input" type="text" required />
+            <input v-model="form.name" class="input" type="text" required style="width:100%; box-sizing:border-box;" />
           </div>
-          <div class="form-group">
+          <div class="form-group" style="box-sizing:border-box;">
             <label class="label">Category</label>
-            <select v-model="form.category" class="select" required>
-              <option v-for="c in categories" :key="c.value" :value="c.value" v-if="c.value !== 'all'">{{ c.label }}</option>
+            <select v-model="form.category" class="select" required style="width:100%; box-sizing:border-box;">
+              <template v-for="c in categories" :key="c.value">
+                <option v-if="c.value !== 'all'" :value="c.value">{{ c.label }}</option>
+              </template>
             </select>
           </div>
-          <div class="form-group">
+          <div class="form-group" style="box-sizing:border-box;">
             <label class="label">Summary</label>
-            <textarea v-model="form.summary" class="input" rows="3"></textarea>
+            <textarea v-model="form.summary" class="input" rows="3" style="width:100%; box-sizing:border-box;"></textarea>
           </div>
-          <div style="display:flex; gap:0.5rem;">
-            <div class="form-group" style="flex:1;">
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.5rem; box-sizing:border-box;">
+            <div class="form-group" style="box-sizing:border-box;">
               <label class="label">High</label>
-              <input v-model.number="form.stats.high" class="input" type="number" min="0" />
+              <input v-model.number="form.stats.high" class="input" type="number" min="0" style="width:100%; box-sizing:border-box;" />
             </div>
-            <div class="form-group" style="flex:1;">
+            <div class="form-group" style="box-sizing:border-box;">
               <label class="label">Medium</label>
-              <input v-model.number="form.stats.medium" class="input" type="number" min="0" />
+              <input v-model.number="form.stats.medium" class="input" type="number" min="0" style="width:100%; box-sizing:border-box;" />
             </div>
-            <div class="form-group" style="flex:1;">
+            <div class="form-group" style="box-sizing:border-box;">
               <label class="label">Low</label>
-              <input v-model.number="form.stats.low" class="input" type="number" min="0" />
+              <input v-model.number="form.stats.low" class="input" type="number" min="0" style="width:100%; box-sizing:border-box;" />
             </div>
           </div>
-          <div style="display:flex; gap:0.5rem;">
-            <div class="form-group" style="flex:1;">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; box-sizing:border-box;">
+            <div class="form-group" style="box-sizing:border-box;">
               <label class="label">Updated (text)</label>
-              <input v-model="form.updated" class="input" type="text" placeholder="Jan 2025" />
+              <input v-model="form.updated" class="input" type="text" placeholder="Jan 2025" style="width:100%; box-sizing:border-box;" />
             </div>
-            <div class="form-group" style="flex:1;">
+            <div class="form-group" style="box-sizing:border-box;">
               <label class="label">Sample report ID</label>
-              <input v-model.number="form.sampleReport" class="input" type="number" min="1" />
+              <input v-model.number="form.sampleReport" class="input" type="number" min="1" style="width:100%; box-sizing:border-box;" />
             </div>
           </div>
-          <div style="display:flex; gap:0.5rem;">
+          <div style="display:flex; gap:0.5rem; box-sizing:border-box;">
             <button class="btn btn-primary" type="submit" :disabled="submitting">{{ submitting ? 'Saving...' : 'Save' }}</button>
             <button class="btn btn-outline" type="button" @click="closeModal">Cancel</button>
           </div>
@@ -153,7 +155,7 @@ const form = reactive({
   updated: '',
   sampleReport: 1,
 })
-
+ // Filtering logic
 const filteredContracts = computed(() => {
   const q = query.value.trim().toLowerCase()
   return contracts.value.filter((contract) => {
@@ -167,7 +169,7 @@ const filteredContracts = computed(() => {
     return matchesCategory && matchesQuery
   })
 })
-
+// Load contracts from API
 async function loadContracts() {
   try {
     errorMessage.value = ''
@@ -214,7 +216,7 @@ function openEditModal(contract) {
 function closeModal() {
   showModal.value = false
 }
-
+// Save contract (add or edit)
 async function saveContract() {
   try {
     submitting.value = true
@@ -245,7 +247,7 @@ async function saveContract() {
     submitting.value = false
   }
 }
-
+// Delete contract
 async function onDelete(id) {
   if (!confirm('Delete this contract?')) return
   try {

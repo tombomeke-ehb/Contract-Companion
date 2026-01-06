@@ -1,9 +1,12 @@
 // frontend/src/api/auth.js
 
-// Centralized authentication API logic
+// Gecentraliseerde authenticatie-logica voor alle auth API-calls
 
+// Basisroute voor alle auth-endpoints aan de backend
 const BASE_PATH = "/api/auth";
 
+// Logt een gebruiker in met e-mail/wachtwoord (credentials)
+// Stuurt een POST-request naar de backend: VITE_API_URL + /api/auth/login
 async function login(credentials) {
   const res = await fetch(
     `${import.meta.env.VITE_API_URL}${BASE_PATH}/login`,
@@ -12,6 +15,7 @@ async function login(credentials) {
       headers: {
         "Content-Type": "application/json",
       },
+      // Verstuur de ingevulde login-gegevens als JSON-body
       body: JSON.stringify(credentials),
     }
   );
@@ -23,12 +27,12 @@ async function login(credentials) {
 
   const data = await res.json();
 
-  // JWT-token opslaan voor beveiligde requests
+  // JWT-token save for secured requests
   if (data.token) {
     localStorage.setItem("token", data.token);
   }
 
-  // Optioneel: user-info opslaan
+  // Optional: user-info save
   if (data.user) {
     localStorage.setItem("user", JSON.stringify(data.user));
   }
@@ -36,6 +40,7 @@ async function login(credentials) {
   return data;
 }
 
+// Registreert een nieuwe gebruiker
 async function signup(userData) {
   const res = await fetch(
     `${import.meta.env.VITE_API_URL}${BASE_PATH}/register`,
@@ -44,6 +49,7 @@ async function signup(userData) {
       headers: {
         "Content-Type": "application/json",
       },
+      // Verstuur de registratiegegevens als JSON-body
       body: JSON.stringify(userData),
     }
   );
@@ -55,12 +61,12 @@ async function signup(userData) {
 
   const data = await res.json();
 
-  // JWT-token opslaan voor beveiligde requests
+  // JWT-token save for secured requests
   if (data.token) {
     localStorage.setItem("token", data.token);
   }
 
-  // Optioneel: user-info opslaan
+  // Optional: user-info save
   if (data.user) {
     localStorage.setItem("user", JSON.stringify(data.user));
   }
@@ -68,8 +74,9 @@ async function signup(userData) {
   return data;
 }
 
+// Verwijdert alle auth-informatie van de client
 function logout() {
-  // Token en user-info verwijderen bij logout
+  // Token and user-info deletion for logout
   localStorage.removeItem("token");
   localStorage.removeItem("user");
 }

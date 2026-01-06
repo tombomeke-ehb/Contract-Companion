@@ -1,5 +1,5 @@
 import db from "../config/db.js";
-
+// Service to manage user preferences
 async function getPreferences(userId) {
   const result = await db.query(
     `SELECT THEME, LANG FROM PREFERENCES WHERE ID_USER = :userId`,
@@ -12,7 +12,7 @@ async function getPreferences(userId) {
 
   return result.rows[0];
 }
-
+// Update or insert user preferences
 async function updatePreferences(userId, theme, lang) {
   const existing = await db.query(
     `SELECT PREF_ID FROM PREFERENCES WHERE ID_USER = :userId`,

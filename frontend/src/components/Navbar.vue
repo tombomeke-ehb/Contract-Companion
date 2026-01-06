@@ -56,7 +56,7 @@
         :id="'primary-navigation'"
         :class="['nav-links', { active: menuOpen }]"
       >
-        <RouterLink :to="{ name: 'dashboard' }">
+        <RouterLink :to="{ name: isAdmin ? 'admin-dashboard' : 'dashboard' }">
           {{ $t('nav.dashboard') }}
         </RouterLink>
         <RouterLink :to="{ name: 'upload' }">
@@ -65,7 +65,7 @@
         <RouterLink :to="{ name: 'settings' }">
           {{ $t('nav.settings') }}
         </RouterLink>
-        <RouterLink :to="{ name: 'common-contracts' }">
+        <RouterLink :to="{ name: isAdmin ? 'admin-common-contracts' : 'common-contracts' }">
           {{ $t('nav.commonContracts') }}
         </RouterLink>
       </nav>
@@ -100,21 +100,27 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useUserStore } from '../stores/userStore'
+import { useNotificationStore } from '@/stores/notificationStore'
+import { useI18n } from 'vue-i18n'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const notifications = useNotificationStore()
+const { t } = useI18n()
 
 const appRouteNames = [
   'dashboard',
   'upload',
   'report-detail',
   'settings',
-  'common-contracts'
+  'common-contracts',
+  'admin-dashboard'
 ]
 const isAppRoute = computed(() => appRouteNames.includes(route.name))
 const isLoggedIn = computed(() => !!userStore.user)
 const isAuthenticated = computed(() => !!userStore.user)
+const isAdmin = computed(() => userStore.user?.isAdmin === true)
 
 const menuOpen = ref(false)
 const isMobile = ref(window.innerWidth <= 768)
@@ -132,7 +138,13 @@ function handleResize() {
   if (!isMobile.value) closeMenu()
 }
 function handleLogout() {
+  const name = userStore.user?.name || userStore.user?.email || ''
   userStore.logout()
+  notifications.push({
+    title: t('toast.loggedOutTitle'),
+    message: name ? t('toast.goodbye', { name }) : t('toast.loggedOutBody'),
+    variant: 'info'
+  })
   closeMenu()
   router.push({ name: 'home' })
 }

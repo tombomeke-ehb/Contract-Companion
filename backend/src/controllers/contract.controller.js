@@ -18,7 +18,7 @@ export async function analyzeContract(req, res) {
 
     const filePath = req.file.path;
 
-    // OCR uitvoeren
+    // OCR execute
     const document = await processContractPdf(filePath);
     const fullText = document.text || "";
 
@@ -74,7 +74,7 @@ export async function analyzeContract(req, res) {
   }
 }
 
-// Contracten ophalen
+// fetching contracts
 export async function getContracts(req, res) {
   try {
     const isAdmin = !!req.user?.isAdmin;
@@ -139,7 +139,7 @@ export async function createCommonContract(req, res) {
     res.status(500).json({ error: 'Failed to create contract' });
   }
 }
-
+// Update common contract
 export async function updateCommonContract(req, res) {
   try {
     const { id } = req.params;
@@ -155,7 +155,7 @@ export async function updateCommonContract(req, res) {
     res.status(500).json({ error: 'Failed to update contract' });
   }
 }
-
+// Delete common contract
 export async function deleteCommonContract(req, res) {
   try {
     const { id } = req.params;

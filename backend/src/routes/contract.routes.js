@@ -16,17 +16,17 @@ import {
 
 const router = express.Router();
 
-// PUBLIEKE ROUTES (geen authenticatie vereist)
-// Common contracts library - beschikbaar voor iedereen
+// Public routes
+// Common contracts library - for everyone to view
 router.get("/common", getCommonContracts);
 
-// BEVEILIGDE ROUTES (vanaf hier authenticate vereist)
+// Secured routes -- all routes below require authentication
 router.use(authenticate);
 
-// Upload + analyse van een contract (user + admin)
+// Upload + analyse of an contract (user + admin)
 router.post("/upload", upload.single("file"), analyzeContract);
 
-// Low-level OCR endpoint (zonder AI), handig voor debugging / tools
+// Low-level OCR endpoint, usefull for debugging / tools
 router.post("/upload-raw", upload.single("file"), async (req, res) => {
   try {
     console.log("[contracts] /upload-raw called, file:", req.file?.originalname);
@@ -38,7 +38,7 @@ router.post("/upload-raw", upload.single("file"), async (req, res) => {
     const document = await processContractPdf(filePath);
 
     const fullText = document.text || "";
-
+    //Page details
     const pages = (document.pages || []).map((p, index) => ({
       pageNumber: index + 1,
       width: p.dimension?.width,
@@ -62,8 +62,8 @@ router.post("/upload-raw", upload.single("file"), async (req, res) => {
   }
 });
 
-// Lijst van contracten
-// Admin ziet alles, user ziet enkel zijn eigen (placeholder)
+// List of contracts
+// admin sees all, user only their own
 router.get("/", getContracts);
 
 // Detail van één contract (voor later detailweergave / debug)

@@ -62,7 +62,7 @@
           <div class="card-subtitle">Updated {{ contract.updated }}</div>
           <RouterLink
             class="btn btn-outline"
-            :to="{ name: 'report-detail', params: { id: contract.sampleReport } }"
+            :to="{ name: 'report-detail', params: { id: contract.sampleReport }, query: { from: 'common' } }"
           >
             View analysis
           </RouterLink>
@@ -102,7 +102,7 @@ const filteredContracts = computed(() => {
     return matchesCategory && matchesQuery
   })
 })
-
+// Load common contracts from API
 async function loadContracts() {
   try {
     const data = await getCommonContracts()

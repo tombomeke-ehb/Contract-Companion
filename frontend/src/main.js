@@ -7,6 +7,11 @@ import router from './router'
 
 import './css/style.css'
 
+import { applyTheme, loadThemeFromStorage } from './theme'
+
+// Apply saved theme before mounting so all routes keep the same theme
+applyTheme(loadThemeFromStorage())
+
 const app = createApp(App)
 
 app.use(createPinia())
