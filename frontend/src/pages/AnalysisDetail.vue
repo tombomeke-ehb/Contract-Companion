@@ -218,6 +218,243 @@ const reports = {
         body: 'Switch to Belgian law for easier enforcement.'
       }
     ]
+  },
+  '3': {
+    title: 'Lease Agreement  Office Space',
+    contractType: 'Lease',
+    date: '08 Jan 2025',
+    riskScore: 4.8,
+    risk: 'medium',
+    riskLabel: 'Medium risk',
+    keySummary: 'Standard office lease with a few landlord-friendly clauses.',
+    humanSummary:
+      'This lease sets out a typical office rental, but contains some clauses on maintenance and early termination that are more favourable to the landlord.',
+    keyFindings: [
+      {
+        title: 'Maintenance obligations',
+        body: 'Tenant is responsible for almost all repairs, including structural items.'
+      },
+      {
+        title: 'Early termination',
+        body: 'Termination is possible only for the landlord in the first 24 months.'
+      }
+    ],
+    summary:
+      'The agreement is workable but could be rebalanced around repairs and termination rights to give the tenant more protection.',
+    focus: ['Lease', 'Office', 'Termination'],
+    breakdown: {
+      'High-risk clauses': 1,
+      'Medium-risk clauses': 3,
+      'Low-risk clauses': 7
+    },
+    actions: [
+      {
+        title: 'Share repair costs',
+        body: 'Limit tenant duties to non-structural elements and cap yearly repair spend.'
+      },
+      {
+        title: 'Mutual termination option',
+        body: 'Introduce a break option that both parties can use after year one.'
+      }
+    ]
+  },
+  '4': {
+    title: 'Service Agreement  Marketing Support',
+    contractType: 'Services',
+    date: '03 Mar 2024',
+    riskScore: 3.9,
+    risk: 'low',
+    riskLabel: 'Low risk',
+    keySummary: 'Clear scope of work and milestones with balanced responsibilities.',
+    humanSummary:
+      'This service agreement describes a recurring marketing engagement with defined deliverables and reasonable service levels.',
+    keyFindings: [
+      {
+        title: 'Scope clarity',
+        body: 'Deliverables and timelines are listed in an annex, which reduces ambiguity.'
+      },
+      {
+        title: 'IP ownership',
+        body: 'Campaign assets are owned by the client once invoices are paid.'
+      }
+    ],
+    summary:
+      'The overall risk is limited, with most clauses following standard market practice.',
+    focus: ['Services', 'Marketing'],
+    breakdown: {
+      'High-risk clauses': 0,
+      'Medium-risk clauses': 2,
+      'Low-risk clauses': 8
+    },
+    actions: [
+      {
+        title: 'Clarify reporting rhythm',
+        body: 'Specify how often performance reports will be shared.'
+      }
+    ]
+  },
+  '5': {
+    title: 'Consulting Agreement  Data Strategy',
+    contractType: 'Consulting',
+    date: '21 Nov 2024',
+    riskScore: 6.4,
+    risk: 'high',
+    riskLabel: 'High risk',
+    keySummary: 'Broad liability and limited confidentiality around data usage.',
+    humanSummary:
+      'The agreement gives the consultant wide discretion to reuse anonymised data and limits liability only slightly, which creates elevated risk.',
+    keyFindings: [
+      {
+        title: 'Liability cap',
+        body: 'Cap is set at three times annual fees with multiple carve-outs.'
+      },
+      {
+        title: 'Data reuse',
+        body: 'Consultant may reuse data for benchmarking without clear safeguards.'
+      }
+    ],
+    summary:
+      'Key risks lie in liability and data handling; both can be improved with targeted amendments.',
+    focus: ['Consulting', 'Data'],
+    breakdown: {
+      'High-risk clauses': 2,
+      'Medium-risk clauses': 3,
+      'Low-risk clauses': 5
+    },
+    actions: [
+      {
+        title: 'Lower liability cap',
+        body: 'Align the cap with 100% of fees paid in the last 12 months.'
+      },
+      {
+        title: 'Tighten data language',
+        body: 'Require true anonymisation and prohibit re-identification.'
+      }
+    ]
+  },
+  '6': {
+    title: 'NDA  Global Pharma',
+    contractType: 'Confidentiality',
+    date: '09 Feb 2023',
+    riskScore: 3.2,
+    risk: 'low',
+    riskLabel: 'Low risk',
+    keySummary: 'Balanced pharma NDA with standard confidentiality carve-outs.',
+    humanSummary:
+      'This NDA tracks closely with industry templates and contains typical carve-outs for regulatory disclosures.',
+    keyFindings: [
+      {
+        title: 'Regulatory disclosures',
+        body: 'Allows disclosure to regulators where legally required.'
+      }
+    ],
+    summary:
+      'The main focus is ensuring correct handling of clinical data and patient information, which is adequately covered.',
+    focus: ['NDA', 'Pharma'],
+    breakdown: {
+      'High-risk clauses': 0,
+      'Medium-risk clauses': 1,
+      'Low-risk clauses': 9
+    },
+    actions: [
+      {
+        title: 'Add data processing addendum',
+        body: 'Reference a separate DPA if personal data is processed.'
+      }
+    ]
+  },
+  '7': {
+    title: 'Partnership Agreement  FinTech Alliance',
+    contractType: 'Partnership',
+    date: '27 Aug 2023',
+    riskScore: 5.5,
+    risk: 'medium',
+    riskLabel: 'Medium risk',
+    keySummary: 'Revenue sharing is clear, but exit provisions need attention.',
+    humanSummary:
+      'This agreement creates a joint go-to-market partnership with shared revenue but has limited detail on exit and transition.',
+    keyFindings: [
+      {
+        title: 'Exit mechanics',
+        body: 'No structured mechanism for unwinding joint customers.'
+      }
+    ],
+    summary:
+      'Commercially attractive but should be refined around termination and customer handling on exit.',
+    focus: ['Partnership', 'FinTech'],
+    breakdown: {
+      'High-risk clauses': 1,
+      'Medium-risk clauses': 3,
+      'Low-risk clauses': 6
+    },
+    actions: [
+      {
+        title: 'Define exit plan',
+        body: 'Add clauses on how to split or transition shared customers.'
+      }
+    ]
+  },
+  '8': {
+    title: 'Lease Agreement  Warehouse',
+    contractType: 'Lease',
+    date: '11 Dec 2022',
+    riskScore: 6.1,
+    risk: 'high',
+    riskLabel: 'High risk',
+    keySummary: 'Long fixed term with strict break conditions and indexation.',
+    humanSummary:
+      'Warehouse lease with a long initial term, automatic indexation and narrow termination rights for the tenant.',
+    keyFindings: [
+      {
+        title: 'Indexation formula',
+        body: 'Rent increases yearly using a broad inflation index without a cap.'
+      }
+    ],
+    summary:
+      'The contract favours the landlord on duration and rent adjustments; negotiate caps and clearer break options.',
+    focus: ['Lease', 'Warehouse'],
+    breakdown: {
+      'High-risk clauses': 2,
+      'Medium-risk clauses': 2,
+      'Low-risk clauses': 5
+    },
+    actions: [
+      {
+        title: 'Cap indexation',
+        body: 'Introduce a maximum annual increase percentage.'
+      }
+    ]
+  },
+  '9': {
+    title: 'Employment Agreement  Sales Team',
+    contractType: 'Employment',
+    date: '06 Jun 2022',
+    riskScore: 3.7,
+    risk: 'low',
+    riskLabel: 'Low risk',
+    keySummary: 'Standard sales contract with commission scheme.',
+    humanSummary:
+      'This contract sets out fixed salary plus commission with clear territory definitions.',
+    keyFindings: [
+      {
+        title: 'Territory clarity',
+        body: 'Sales territories are listed in an annex, reducing overlap.'
+      }
+    ],
+    summary:
+      'Risk level is modest, mainly focused on getting the commission and territory schedules correct.',
+    focus: ['Employment', 'Sales'],
+    breakdown: {
+      'High-risk clauses': 0,
+      'Medium-risk clauses': 2,
+      'Low-risk clauses': 8
+    },
+    actions: [
+      {
+        title: 'Align commission with targets',
+        body: 'Ensure yearly sales targets are documented and agreed in writing.'
+      }
+    ]
   }
 }
 
