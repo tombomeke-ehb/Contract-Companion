@@ -29,17 +29,20 @@ export async function analyzeContract(req, res) {
       console.warn("Could not delete uploaded file", e);
     }
 
-    // 2. Run new two-stage AI pipeline on the OCR text
-    const aiResult = await analyzeContractText(fullText);
+    const contractType = req.body?.contractType || "";
+    const notes = req.body?.notes || "";
+
+    // 2. Run new two-stage AI pipeline on the OCR text, passing contractType and notes
+    const aiResult = await analyzeContractText(fullText, contractType, notes);
 
     // 3. Extract risk score from LLM2 for persistence
     const riskScore = aiResult?.llm2?.overallRiskScore ?? 5.0;
 
     // Use the JWT payload field "id" for the current user
     const userId = req.user?.id || null;
-    const docType = 1; // TODO: map from req.body.contractType if desired
+    const docType = contractType || 1; // Optionally map contractType to docType if needed
     const title = req.file.originalname || "Uploaded contract";
-    const description = req.body?.notes || "";
+    const description = notes;
 
     const { docId } = await createDocumentWithSummary({
       userId,

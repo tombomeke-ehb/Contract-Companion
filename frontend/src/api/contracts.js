@@ -9,9 +9,11 @@ const BASE_PATH = "/api/contracts";
  * Upload a single contract file to the backend.
  *
  * @param {File} file - The contract file selected in the browser.
+ * @param {string} contractType - The type of the contract.
+ * @param {string} notes - Additional notes for the contract.
  * @returns {Promise<any>} Parsed JSON response from the backend.
  */
-export async function uploadContract(file) {
+export async function uploadContract(file, contractType = '', notes = '') {
   const token = localStorage.getItem("token");
 
   if (!token) {
@@ -21,6 +23,8 @@ export async function uploadContract(file) {
   const form = new FormData();
   // Field name MUST match upload.single('file') in backend/src/middleware/upload.js
   form.append("file", file);
+  form.append("contractType", contractType);
+  form.append("notes", notes);
 
   const res = await fetch(`${API_BASE_URL}${BASE_PATH}/upload`, {
     method: "POST",

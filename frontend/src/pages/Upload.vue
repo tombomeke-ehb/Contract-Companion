@@ -263,7 +263,7 @@ const handleSubmit = async () => {
   status.value = 'Uploading and analysing your contract...'
 
   try {
-    const result = await uploadContract(selectedFile.value)
+    const result = await uploadContract(selectedFile.value, form.contractType, form.notes)
     status.value = 'Upload successful. Generating your AI report...'
 
     // Store the most recent report in the store for the detail page

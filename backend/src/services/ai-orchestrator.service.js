@@ -14,9 +14,11 @@ import { runLlm2LegalOllama } from "./llm2-legal-ollama.service.js";
  * 3) Call LLM2 to produce final legal analysis JSON
  *
  * @param {string} rawText - OCR-extracted text of the contract
+ * @param {string} contractType - User-selected contract type or "Not sure"
+ * @param {string} notes - User-provided notes for context
  * @returns {Promise<object>} Final AI result for the frontend
  */
-export async function analyzeContractText(rawText) {
+export async function analyzeContractText(rawText, contractType = '', notes = '') {
   const language = detectLanguage(rawText);
   const { maskedText, maskMap } = maskEntities(rawText);
 
@@ -31,9 +33,24 @@ export async function analyzeContractText(rawText) {
   };
 
   // Step 2: send structured representation to LLM2 using Ollama
+  let contractTypeInstruction = '';
+  if (!contractType || contractType.toLowerCase() === 'not sure') {
+    contractTypeInstruction = 'The user is not sure about the contract type. Please infer the contract type from the contract text and specify it in the "contractType" field.';
+  } else {
+    contractTypeInstruction = `The user selected the contract type: "${contractType}". Use this as context for your analysis and set the "contractType" field accordingly.`;
+  }
+
+  let notesInstruction = '';
+  if (notes && notes.trim().length > 0) {
+    notesInstruction = `User notes for context: "${notes}"`;
+  }
+
   const prompt = `
 You are an expert contract lawyer. Analyze the following contract and respond ONLY with a single, valid JSON object.
 Do NOT add any explanation, comments, or text before or after the JSON. The JSON must be valid and include ALL fields, even if empty.
+
+${contractTypeInstruction}
+${notesInstruction}
 
 If a field is not applicable, use an empty string (""), empty array ([]), or 0 for numbers.
 
