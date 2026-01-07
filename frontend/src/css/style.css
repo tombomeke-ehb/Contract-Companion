@@ -2908,3 +2908,96 @@ html.theme-dark .doc-list.doc-list--numbered span {
   background-color: #dc2626;
   cursor: pointer;
 }
+
+.notification-bell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  border-radius: 999px;
+  box-shadow: var(--shadow-soft);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.notification-bell:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-medium);
+}
+
+.bell-icon {
+  font-size: 1.1rem;
+}
+
+.notification-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 280px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-medium);
+  padding: 0.75rem;
+  z-index: 40;
+}
+
+.notification-dropdown__title {
+  margin: 0 0 0.35rem 0;
+  font-weight: 600;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.notification-dropdown__empty {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  padding: 0.5rem 0.25rem;
+}
+
+.notification-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.notification-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  padding: 0;
+}
+
+.notification-item__button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 0.65rem 0.75rem;
+  cursor: pointer;
+}
+
+.notification-item__button:hover {
+  background: var(--accent-soft);
+}
+
+.notification-item__title {
+  font-weight: 600;
+  margin-bottom: 0.15rem;
+  color: var(--text);
+}
+
+.notification-item__body {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
