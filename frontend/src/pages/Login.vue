@@ -48,11 +48,13 @@ import { useRouter, RouterLink } from 'vue-router'
 import authApi from '@/api/auth'
 import { useUserStore } from '@/stores/userStore'
 import { useNotificationStore } from '@/stores/notificationStore'
+import { useAuthStore } from '@/stores/authStore'
 import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
 const userStore = useUserStore()
 const notifications = useNotificationStore()
+const authStore = useAuthStore()
 const { t } = useI18n()
 
 const email = ref('')
@@ -65,6 +67,8 @@ const onLogin = async () => {
       password: password.value
     })
 
+    // persist auth in both stores
+    authStore.setAuth({ token: data.token, user: data.user })
     userStore.setUser(data.user)
 
     const name = data.user?.name || data.user?.email || ''
