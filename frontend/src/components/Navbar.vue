@@ -71,6 +71,41 @@
       </nav>
       <!-- Actions (desktop only) -->
       <div class="nav-actions" v-if="!isMobile">
+        <!-- Notification badge & dropdown -->
+        <div
+          v-if="isLoggedIn"
+          class="notification-badge-wrapper"
+          ref="notificationPanel"
+        >
+          <button
+            type="button"
+            class="notification-bell"
+            :aria-expanded="showNotifications.toString()"
+            aria-haspopup="true"
+            @click="toggleNotifications"
+          >
+            <span class="bell-icon" aria-hidden="true">🔔</span>
+            <span
+              v-if="expiringCount > 0"
+              class="notification-badge"
+              :title="`${expiringCount} contract(s) expiring tomorrow`"
+            >
+              {{ expiringCount }}
+            </span>
+          </button>
+          <div v-if="showNotifications" class="notification-dropdown" role="menu">
+            <p class="notification-dropdown__title">Notifications</p>
+            <div v-if="toasts.length === 0" class="notification-dropdown__empty">
+              No notifications
+            </div>
+            <ul v-else class="notification-list">
+              <li v-for="toast in toasts" :key="toast.id" class="notification-item">
+                <div class="notification-item__title">{{ toast.title }}</div>
+                <div v-if="toast.message" class="notification-item__body">{{ toast.message }}</div>
+              </li>
+            </ul>
+          </div>
+        </div>
         <template v-if="!isAppRoute">
           <template v-if="!isLoggedIn">
             <RouterLink :to="{ name: 'login' }" class="btn btn-outline">Login</RouterLink>
@@ -108,6 +143,8 @@ const router = useRouter()
 const userStore = useUserStore()
 const notifications = useNotificationStore()
 const { t } = useI18n()
+
+const expiringCount = computed(() => notifications.expiringContractCount)
 
 const appRouteNames = [
   'dashboard',

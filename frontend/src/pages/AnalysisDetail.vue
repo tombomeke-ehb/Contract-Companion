@@ -27,6 +27,17 @@
           <input v-model="contractEndDate" type="datetime-local" class="input" />
         </div>
       </div>
+      <div style="display:flex; gap:0.5rem; margin-top:1rem;">
+        <button class="btn btn-primary" type="button" @click="saveContractDates">
+          Save Contract Dates
+        </button>
+        <p v-if="dateSaveSuccess" class="card-subtitle" style="color:var(--success); margin:0; align-self:center;">
+          {{ dateSaveSuccess }}
+        </p>
+        <p v-if="dateSaveError" class="card-subtitle" style="color:var(--danger); margin:0; align-self:center;">
+          {{ dateSaveError }}
+        </p>
+      </div>
     </article>
 
     <article v-if="!isCommonPage" class="card" style="margin-bottom:2rem;">
@@ -242,11 +253,59 @@ const isCommonPage = computed(() => String(route.query?.from || '') === 'common'
 
 const contractStartDate = ref('')
 const contractEndDate = ref('')
+const dateSaveSuccess = ref('')
+const dateSaveError = ref('')
 const eventDate = ref('')
 const durationMinutes = ref(60)
 const calendarError = ref('')
 const calendarSuccess = ref('')
 const downloading = ref(false)
+
+// Load saved contract dates on mount
+const contractId = route.params.id || '1'
+const savedDates = localStorage.getItem(`contract_dates_${contractId}`)
+if (savedDates) {
+  const parsed = JSON.parse(savedDates)
+  contractStartDate.value = parsed.startDate || ''
+  contractEndDate.value = parsed.endDate || ''
+}
+
+// Save contract dates to localStorage
+function saveContractDates() {
+  dateSaveSuccess.value = ''
+  dateSaveError.value = ''
+  
+  if (!contractStartDate.value && !contractEndDate.value) {
+    dateSaveError.value = 'Please enter at least one date.'
+    return
+  }
+  
+  const contractData = {
+    contractId: contractId,
+    title: report.title,
+    startDate: contractStartDate.value,
+    endDate: contractEndDate.value,
+    savedAt: new Date().toISOString()
+  }
+  
+  // Save to localStorage
+  localStorage.setItem(`contract_dates_${contractId}`, JSON.stringify(contractData))
+  
+  // Also maintain a list of all contracts with dates
+  const allContracts = JSON.parse(localStorage.getItem('all_contract_dates') || '[]')
+  const existingIndex = allContracts.findIndex(c => c.contractId === contractId)
+  if (existingIndex >= 0) {
+    allContracts[existingIndex] = contractData
+  } else {
+    allContracts.push(contractData)
+  }
+  localStorage.setItem('all_contract_dates', JSON.stringify(allContracts))
+  
+  dateSaveSuccess.value = 'Contract dates saved successfully!'
+  setTimeout(() => {
+    dateSaveSuccess.value = ''
+  }, 3000)
+}
 
 // Prepare event payload for calendar links and ICS files
 const eventPayload = computed(() => {
