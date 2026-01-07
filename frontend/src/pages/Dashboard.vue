@@ -82,6 +82,9 @@
             >
               {{ $t('dashboard.view') }}
             </RouterLink>
+            <button class="btn btn-danger" style="margin-left:0.5rem;" @click.stop="handleDelete(report.id)">
+              {{ $t('dashboard.delete') || 'Delete' }}
+            </button>
           </div>
         </li>
       </transition-group>
@@ -96,7 +99,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useUserStore } from '../stores/userStore'
-import { getContracts as fetchContracts } from '../api/contracts'
+import { getContracts as fetchContracts, deleteContract } from '../api/contracts'
 
 const reports = ref([
   {
@@ -184,5 +187,15 @@ const badgeClass = (risk) => {
 const router = useRouter()
 function goToReport(id) {
   router.push({ name: 'report-detail', params: { id } })
+}
+
+function handleDelete(reportId) {
+  if (confirm('Are you sure you want to delete this contract?')) {
+    deleteContract(reportId)
+      .then(() => {
+        reports.value = reports.value.filter(r => r.id !== reportId)
+      })
+      .catch(() => alert('Failed to delete contract.'))
+  }
 }
 </script>
