@@ -45,53 +45,21 @@ export async function analyzeContractText(rawText, contractType = '', notes = ''
     notesInstruction = `User notes for context: "${notes}"`;
   }
 
-  const prompt = `
-You are an expert contract lawyer. Analyze the following contract and respond ONLY with a single, valid JSON object.
-Do NOT add any explanation, comments, or text before or after the JSON. The JSON must be valid and include ALL fields, even if empty.
+  // --- PROMPT AANPASSING: executive summary moet een echte samenvatting zijn ---
+  const prompt = `You are a legal contract analysis assistant. Given the structured contract data below, generate a JSON report with the following requirements:
 
-${contractTypeInstruction}
-${notesInstruction}
+1. The executiveSummary field must be a true summary of the contract's content, purpose, parties, and main points. It should be 3–6 sentences and not just a risk overview. If possible, mention the type of contract, the main obligations, and the context.
+2. The keySummary and keyFindings fields should focus on the main legal risks and issues.
+3. The clauses field must contain for each clause (duration, termination, renewal, liability, payment, confidentiality, jurisdiction):
+   - present: true/false
+   - text: the full text of the clause (if present)
+   - risk: one of 'low', 'medium', 'high'
+   - issues: array of strings with concrete issues or empty if none
+4. Always include every field in the output, even if empty.
+5. Only return valid JSON, no comments or extra text.
 
-If a field is not applicable, use an empty string (""), empty array ([]), or 0 for numbers.
-
-Here is the contract text:
-
-"""${rawText}"""
-
-Respond with JSON in this exact structure:
-{
-  "title": string,                       // e.g. "Confidentiality Agreement"
-  "contractType": string,                // e.g. "NDA", "Employment", "Lease", ...
-  "analyzedAt": string,                  // ISO 8601 datetime (UTC)
-  "overallRiskScore": number,            // 0.0 (no risk) – 10.0 (very high risk)
-  "overallRisk": "low" | "medium" | "high",
-  "overallRiskLabel": string,            // e.g. "Moderately Risky"
-  "humanSummary": string,                // short summary in English or Dutch
-  "keySummary": string,                  // one-sentence summary of main risks
-  "executiveSummary": string,            // 3–6 sentences, can be in Dutch
-  "focusTags": string[],                 // e.g. ["confidentiality", "collaboration"]
-  "keyFindings": string[],               // list of key findings, or [] if none
-  "clauseBreakdown": {
-    "highRiskClauses": number,
-    "mediumRiskClauses": number,
-    "lowRiskClauses": number
-  },
-  "clauses": {
-    "duration": { "present": boolean, "text": string, "risk": "low"|"medium"|"high", "issues": string[] },
-    "termination": { "present": boolean, "text": string, "risk": "low"|"medium"|"high", "issues": string[] },
-    "renewal": { "present": boolean, "text": string, "risk": "low"|"medium"|"high", "issues": string[] },
-    "liability": { "present": boolean, "text": string, "risk": "low"|"medium"|"high", "issues": string[] },
-    "payment": { "present": boolean, "text": string, "risk": "low"|"medium"|"high", "issues": string[] },
-    "confidentiality": { "present": boolean, "text": string, "risk": "low"|"medium"|"high", "issues": string[] },
-    "jurisdiction": { "present": boolean, "text": string, "risk": "low"|"medium"|"high", "issues": string[] }
-  },
-  "recommendedActions": string[]         // list of concrete next steps, or [] if none
-}
-
-Rules:
-- Always include every field, even if empty.
-- If a clause is not present, set "present": false and "text": "".
-- Only return valid JSON, no comments or extra text.
+Structured contract data:
+${JSON.stringify(structuredForLlm2)}
 `;
 
   const resultText = await runLlm2LegalOllama({ prompt, model: "qwen2" });
