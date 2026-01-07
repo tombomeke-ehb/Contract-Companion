@@ -57,7 +57,9 @@ export function checkAndNotifyExpiringContracts(notificationPush, setCountFuncti
       message: `"${contract.title}" expires tomorrow. Please review or renew.`,
       variant: 'warning',
       timeout: 10000, // Show for 10 seconds
-      isContractExpiry: true
+      isContractExpiry: true,
+      route: { name: 'report-detail', params: { id: contract.contractId || '1' } },
+      contractId: contract.contractId
     })
   })
   

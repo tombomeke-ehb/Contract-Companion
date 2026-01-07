@@ -6,9 +6,11 @@ let nextId = 1
 
 export const useNotificationStore = defineStore('notifications', () => {
   const toasts = ref([])
+  const inbox = ref([]) // persistent list of all notifications
   const expiringContractCount = ref(0)
 
   const visibleToasts = computed(() => toasts.value)
+  const inboxItems = computed(() => inbox.value)
 
   function push({
     title,
@@ -18,8 +20,9 @@ export const useNotificationStore = defineStore('notifications', () => {
     isContractExpiry = false
   }) {
     const id = nextId++
-    const toast = { id, title, message, variant, timeout, isContractExpiry }
+    const toast = { id, title, message, variant, timeout, isContractExpiry, createdAt: Date.now() }
     toasts.value = [...toasts.value, toast]
+    inbox.value = [toast, ...inbox.value]
 
     // If it's a contract expiry notification, increment the count
     if (isContractExpiry) {
@@ -43,6 +46,7 @@ export const useNotificationStore = defineStore('notifications', () => {
 
   function clear() {
     toasts.value = []
+    inbox.value = []
     expiringContractCount.value = 0
   }
 
@@ -52,6 +56,7 @@ export const useNotificationStore = defineStore('notifications', () => {
 
   return { 
     toasts: visibleToasts, 
+    inbox: inboxItems,
     expiringContractCount: computed(() => expiringContractCount.value),
     push, 
     dismiss, 

@@ -20,6 +20,7 @@ import Navbar from './components/Navbar.vue'
 import Footer from './components/Footer.vue'
 import ToastHost from './components/ToastHost.vue'
 import { useUserStore } from './stores/userStore'
+import { useAuthStore } from './stores/authStore'
 import { useNotificationStore } from './stores/notificationStore'
 import { useRouter } from 'vue-router'
 import { startSessionTimeout, stopSessionTimeout } from './utils/sessionTimeout'
@@ -28,6 +29,7 @@ import { checkAndNotifyExpiringContracts } from './utils/contractExpiry'
 const API_BASE_URL = import.meta.env.VITE_API_URL
 
 const userStore = useUserStore()
+const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
 const router = useRouter()
 
@@ -77,7 +79,12 @@ function sessionListener(e) {
 }
 
 onMounted(async () => {
+  // Hydrate auth + user from storage on load
+  authStore.initFromStorage()
   userStore.loadFromStorage()
+  if (authStore.user && !userStore.user) {
+    userStore.setUser(authStore.user)
+  }
 
   // Check for expiring contracts and show notifications
   checkAndNotifyExpiringContracts(notificationStore.push, notificationStore.setExpiringContractCount)
