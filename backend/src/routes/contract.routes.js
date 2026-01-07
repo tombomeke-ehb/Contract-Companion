@@ -15,6 +15,31 @@ import {
 
 const router = express.Router();
 
+// Wrapper around Multer to translate upload/validation errors
+// into clean JSON responses for the frontend.
+const uploadWithValidation = (req, res, next) => {
+  const uploader = upload.single("file");
+
+  uploader(req, res, (err) => {
+    if (err) {
+      if (err.message === "UNSUPPORTED_FILE_TYPE") {
+        return res.status(400).json({
+          success: false,
+          error: "Only PDF, DOC, DOCX or TXT files are allowed.",
+        });
+      }
+
+      console.error("Upload error:", err);
+      return res.status(400).json({
+        success: false,
+        error: "Failed to upload file.",
+      });
+    }
+
+    next();
+  });
+};
+
 // Public routes
 // Common contracts library - for everyone to view
 router.get("/common", getCommonContracts);
@@ -22,11 +47,11 @@ router.get("/common", getCommonContracts);
 // Secured routes -- all routes below require authentication
 router.use(authenticate);
 
-// Upload + analyse of an contract (user + admin)
-router.post("/upload", upload.single("file"), analyzeContract);
+// Upload + analyse of a contract (user + admin)
+router.post("/upload", uploadWithValidation, analyzeContract);
 
-// Low-level OCR endpoint, usefull for debugging / tools
-router.post("/upload-raw", upload.single("file"), async (req, res) => {
+// Low-level OCR endpoint, useful for debugging / tools
+router.post("/upload-raw", uploadWithValidation, async (req, res) => {
   try {
     console.log("[contracts] /upload-raw called, file:", req.file?.originalname);
     if (!req.file) {
