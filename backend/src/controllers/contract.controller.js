@@ -2,9 +2,10 @@
 
 import fs from "fs/promises";
 import { processContractPdf } from "../services/documentOCR.service.js";
-import { createDocumentWithSummary, listUserContracts, getContractWithSummary } from "../services/contract.service.js";
+import { createDocumentWithSummary, listUserContracts, getContractWithSummary, deleteContractById } from "../services/contract.service.js";
 import { analyzeContractText } from "../services/ai-orchestrator.service.js";
 import { mapLlm2ToReport } from "../services/report-mapper.service.js";
+import * as commonContractService from "../services/commonContract.service.js";
 
 // Upload + OCR + AI analyse (ingelogde users)
 export async function analyzeContract(req, res) {
@@ -40,7 +41,7 @@ export async function analyzeContract(req, res) {
 
     // Use the JWT payload field "id" for the current user
     const userId = req.user?.id || null;
-    const docType = contractType || 1; // Optionally map contractType to docType if needed
+    const docType = Number(contractType) || 1; // Ensure docType is a number
     const title = req.file.originalname || "Uploaded contract";
     const description = notes;
 
@@ -52,6 +53,7 @@ export async function analyzeContract(req, res) {
       fullText,
       riskScore,
       endDate: null,
+      analysisJson: JSON.stringify(aiResult.llm2)
     });
 
     // 4. Map LLM2 output to a report shape expected by the frontend
@@ -106,6 +108,22 @@ export async function getContractDetail(req, res) {
   } catch (err) {
     console.error("getContractDetail failed", err);
     res.status(500).json({ error: "Failed to fetch contract" });
+  }
+}
+
+// Verwijder contract (user + admin)
+export async function deleteContract(req, res) {
+  try {
+    const { id } = req.params;
+    const numericId = Number(id);
+    if (!numericId) {
+      return res.status(400).json({ error: 'Invalid contract id' });
+    }
+    await deleteContractById(numericId);
+    res.json({ success: true, removed: { id: numericId } });
+  } catch (err) {
+    console.error('deleteContract error', err);
+    res.status(500).json({ error: 'Failed to delete contract' });
   }
 }
 
