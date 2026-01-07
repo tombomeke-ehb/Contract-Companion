@@ -4,11 +4,11 @@ import { query } from "../config/db.js";
 // Service for working with contract summaries and risk scores.
 // Maps between the SAMENVATTING (summary) table and higher level objects used in controllers.
 
-// Create a new summary row for a given document.
-export async function createSummary({ idDoc, text, riskScore }) {
+// Create a new summary row for a given document, now with JSON analysis
+export async function createSummary({ idDoc, text, riskScore, analysisJson }) {
   const sql = `
-    INSERT INTO SAMENVATTING (ID_DOC, TEKST, RISK_SCORE)
-    VALUES (:idDoc, :text, :riskScore)
+    INSERT INTO SAMENVATTING (ID_DOC, TEKST, RISK_SCORE, ANALYSE_JSON)
+    VALUES (:idDoc, :text, :riskScore, :analysisJson)
     RETURNING SAMENVATTING_ID INTO :outId
   `;
 
@@ -17,6 +17,7 @@ export async function createSummary({ idDoc, text, riskScore }) {
     idDoc: { val: idDoc, type: oracledb.NUMBER },
     text: { val: text, type: oracledb.STRING },
     riskScore: { val: riskScore, type: oracledb.NUMBER },
+    analysisJson: { val: analysisJson, type: oracledb.CLOB },
     outId: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
   };
 
@@ -26,10 +27,10 @@ export async function createSummary({ idDoc, text, riskScore }) {
   return { id: newId, idDoc, text, riskScore };
 }
 
-// Fetch a single summary for a given document ID.
+// Fetch a single summary for a given document ID, now with JSON analysis
 export async function getSummaryByDocumentId(idDoc) {
   const sql = `
-    SELECT SAMENVATTING_ID, ID_DOC, TEKST, RISK_SCORE
+    SELECT SAMENVATTING_ID, ID_DOC, TEKST, RISK_SCORE, ANALYSE_JSON
     FROM SAMENVATTING
     WHERE ID_DOC = :idDoc
   `;
@@ -43,6 +44,7 @@ export async function getSummaryByDocumentId(idDoc) {
     idDoc: row.ID_DOC,
     text: row.TEKST,
     riskScore: row.RISK_SCORE,
+    analysisJson: row.ANALYSE_JSON ? JSON.parse(row.ANALYSE_JSON) : null,
   };
 }
 
@@ -65,7 +67,7 @@ export async function listSummaries(limit = 50) {
   }));
 }
 
-// Create a new document along with its summary.
+// Create a new document along with its summary, now with JSON analysis
 export async function createDocumentWithSummary({
   userId,
   docType,
@@ -74,6 +76,7 @@ export async function createDocumentWithSummary({
   fullText,
   riskScore,
   endDate,
+  analysisJson
 }) {
   // 1) Insert into DOCUMENTEN with a generated ID_DOC using a sequence-less pattern
   const insertDocSql = `
@@ -113,8 +116,8 @@ export async function createDocumentWithSummary({
 
   // 3) Insert into SAMENVATTING for this document
   const insertSummarySql = `
-    INSERT INTO SAMENVATTING (ID_DOC, TEKST, RISK_SCORE)
-    VALUES (:idDoc, :text, :riskScore)
+    INSERT INTO SAMENVATTING (ID_DOC, TEKST, RISK_SCORE, ANALYSE_JSON)
+    VALUES (:idDoc, :text, :riskScore, :analysisJson)
     RETURNING SAMENVATTING_ID INTO :outId
   `;
 
@@ -122,6 +125,7 @@ export async function createDocumentWithSummary({
     idDoc: { val: newDocId, type: oracledb.NUMBER },
     text: { val: fullText, type: oracledb.STRING },
     riskScore: { val: riskScore, type: oracledb.NUMBER },
+    analysisJson: { val: analysisJson, type: oracledb.CLOB },
     outId: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
   };
 
@@ -190,6 +194,7 @@ export async function listUserContracts({ userId, isAdmin }) {
   });
 }
 
+// Pas ook getContractWithSummary aan zodat analysisJson wordt meegegeven
 export async function getContractWithSummary(idDoc) {
   const sql = `
     SELECT
@@ -198,7 +203,8 @@ export async function getContractWithSummary(idDoc) {
       d.BESCHRIJVING,
       d.UPLOADDATUM,
       s.TEKST,
-      s.RISK_SCORE
+      s.RISK_SCORE,
+      s.ANALYSE_JSON
     FROM DOCUMENTEN d
     LEFT JOIN SAMENVATTING s ON s.ID_DOC = d.ID_DOC
     WHERE d.ID_DOC = :idDoc
@@ -215,5 +221,14 @@ export async function getContractWithSummary(idDoc) {
     uploadedAt: row.UPLOADDATUM,
     text: row.TEKST,
     riskScore: row.RISK_SCORE,
+    analysisJson: row.ANALYSE_JSON ? JSON.parse(row.ANALYSE_JSON) : null,
   };
+}
+
+// Verwijder een contract en bijbehorende samenvatting
+export async function deleteContractById(idDoc) {
+  // Eerst samenvatting verwijderen (foreign key constraint)
+  await query('DELETE FROM SAMENVATTING WHERE ID_DOC = :idDoc', { idDoc });
+  // Daarna document zelf verwijderen
+  await query('DELETE FROM DOCUMENTEN WHERE ID_DOC = :idDoc', { idDoc });
 }
