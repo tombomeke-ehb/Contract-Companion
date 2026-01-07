@@ -70,3 +70,7 @@ export async function updateCommonContract(id, payload) {
 export async function deleteCommonContract(id) {
   return http.del(`${BASE_PATH}/common/${encodeURIComponent(id)}`);
 }
+
+export async function deleteContract(id) {
+  return http.del(`${BASE_PATH}/${id}`)
+}
