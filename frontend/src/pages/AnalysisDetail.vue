@@ -15,9 +15,10 @@
     </header>
 
     <article v-if="!isCommonPage" class="card" style="margin-bottom:2rem;">
-      <h2 class="card-title">Contract Duration</h2>
-      <p class="card-subtitle">Start and end dates of the contract.</p>
-      <div style="display:grid; gap:0.75rem; grid-template-columns:1fr 1fr; align-items:flex-end; margin-top:1rem;">
+      <h2 class="card-title">Contract Dates & Calendar</h2>
+      <p class="card-subtitle">Set contract start/end and schedule a reminder in one place.</p>
+
+      <div style="display:grid; gap:1rem; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); align-items:flex-start; margin-top:1rem;">
         <div class="form-group" style="margin:0;">
           <label class="label">Contract Start Date & Time</label>
           <input v-model="contractStartDate" type="datetime-local" class="input" />
@@ -26,26 +27,8 @@
           <label class="label">Contract End Date & Time</label>
           <input v-model="contractEndDate" type="datetime-local" class="input" />
         </div>
-      </div>
-      <div style="display:flex; gap:0.5rem; margin-top:1rem;">
-        <button class="btn btn-primary" type="button" @click="saveContractDates">
-          Save Contract Dates
-        </button>
-        <p v-if="dateSaveSuccess" class="card-subtitle" style="color:var(--success); margin:0; align-self:center;">
-          {{ dateSaveSuccess }}
-        </p>
-        <p v-if="dateSaveError" class="card-subtitle" style="color:var(--danger); margin:0; align-self:center;">
-          {{ dateSaveError }}
-        </p>
-      </div>
-    </article>
-
-    <article v-if="!isCommonPage" class="card" style="margin-bottom:2rem;">
-      <h2 class="card-title">Add to calendar</h2>
-      <p class="card-subtitle">Set a reminder to review or cancel this contract.</p>
-      <div style="display:grid; gap:0.75rem; grid-template-columns:1fr 1fr; align-items:flex-end; margin-top:1rem;">
         <div class="form-group" style="margin:0;">
-          <label class="label">Start date & time</label>
+          <label class="label">Reminder Date & Time (prefilled with contract end)</label>
           <input v-model="eventDate" type="datetime-local" class="input" />
         </div>
         <div class="form-group" style="margin:0;">
@@ -53,7 +36,11 @@
           <input v-model.number="durationMinutes" type="number" min="15" class="input" />
         </div>
       </div>
-      <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:1rem;">
+
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:1rem; align-items:center;">
+        <button class="btn btn-primary" type="button" @click="saveContractDates">
+          Save Contract Dates
+        </button>
         <a
           class="btn btn-outline"
           :href="googleLink || 'javascript:void(0)'"
@@ -70,6 +57,12 @@
         <button class="btn btn-outline" type="button" :disabled="!eventPayload || downloading" @click="downloadServerIcs">
           {{ downloading ? 'Downloading...' : 'Download .ics (server)' }}
         </button>
+        <p v-if="dateSaveSuccess" class="card-subtitle" style="color:var(--success); margin:0;">
+          {{ dateSaveSuccess }}
+        </p>
+        <p v-if="dateSaveError" class="card-subtitle" style="color:var(--danger); margin:0;">
+          {{ dateSaveError }}
+        </p>
         <p v-if="calendarError" class="card-subtitle" style="color:var(--danger); margin:0;">
           {{ calendarError }}
         </p>
@@ -134,7 +127,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import RiskScoreCircle from '../components/RiskScoreCircle.vue'
 import { buildGoogleCalendarUrl, downloadIcsClient } from '../utils/calendar'
@@ -268,7 +261,19 @@ if (savedDates) {
   const parsed = JSON.parse(savedDates)
   contractStartDate.value = parsed.startDate || ''
   contractEndDate.value = parsed.endDate || ''
+  if (parsed.endDate) {
+    eventDate.value = parsed.endDate
+  }
 }
+
+watch(
+  () => contractEndDate.value,
+  (val) => {
+    if (val) {
+      eventDate.value = val
+    }
+  }
+)
 
 // Save contract dates to localStorage
 function saveContractDates() {

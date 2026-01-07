@@ -69,6 +69,12 @@
           <div style="min-width:220px;">
             <h3 style="margin-bottom:0.25rem;">{{ report.title }}</h3>
             <p class="card-subtitle">{{ report.subtitle }}</p>
+            <p class="card-subtitle" v-if="hasDates(report.id)">
+              {{ formatDate(contractDates[report.id]?.startDate) }}
+              <span aria-hidden="true">→</span>
+              {{ formatDate(contractDates[report.id]?.endDate) }}
+            </p>
+            <p class="card-subtitle" v-else>Dates not set</p>
           </div>
           <div class="report-list__meta">
             <span class="badge" :class="badgeClass(report.risk)">
@@ -126,6 +132,24 @@ const reports = [
 
 const riskFilter = ref('all')
 const monthFilter = ref('all')
+const contractDates = ref({})
+
+function loadContractDates() {
+  try {
+    const all = JSON.parse(localStorage.getItem('all_contract_dates') || '[]')
+    const map = {}
+    all.forEach((c) => {
+      if (c?.contractId) {
+        map[c.contractId] = c
+      }
+    })
+    contractDates.value = map
+  } catch (err) {
+    contractDates.value = {}
+  }
+}
+
+loadContractDates()
 
 const months = ['Jan 2025', 'Feb 2025', 'Mar 2025', 'Apr 2025', 'May 2025', 'Jun 2025', 'Jul 2025', 'Aug 2025', 'Sep 2025', 'Oct 2025', 'Nov 2025', 'Dec 2025']
 const currentMonth = 'Nov 2025'
@@ -162,6 +186,24 @@ const badgeClass = (risk) => {
   if (risk === 'high') return 'badge-high'
   if (risk === 'medium') return 'badge-medium'
   return 'badge-low'
+}
+
+const formatDate = (value) => {
+  if (!value) return '—'
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return value
+  return d.toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const hasDates = (id) => {
+  const c = contractDates.value[id]
+  return Boolean(c?.startDate || c?.endDate)
 }
 
 const router = useRouter()
