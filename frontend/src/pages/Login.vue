@@ -66,6 +66,7 @@ const onLogin = async () => {
     })
 
     userStore.setUser(data.user)
+    await userStore.loadPreferences() // Load and apply theme from backend
 
     const name = data.user?.name || data.user?.email || ''
     notifications.push({
