@@ -12,6 +12,7 @@ import {
   createCommonContract,
   updateCommonContract,
   deleteCommonContract,
+  deleteContract
 } from "../controllers/contract.controller.js";
 
 const router = express.Router();
@@ -68,6 +69,9 @@ router.get("/", getContracts);
 
 // Detail van één contract (voor later detailweergave / debug)
 router.get("/:id", getContractDetail);
+
+// Verwijder contract
+router.delete("/:id", deleteContract);
 
 // Admin-manageable "common contracts" library (admin only voor beheer)
 router.post("/common", isAdmin, createCommonContract);
