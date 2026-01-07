@@ -22,6 +22,7 @@ export async function updatePreferencesForUser(req, res, next) {
     const userId = Number(req.params.userId);
     const { theme, language, region, sessionTimeout } = req.body;
     const langCode = language === "nl" ? "nl" : "en";
+    console.log('[preferences.controller] updatePreferencesForUser', { userId, theme, language, region, sessionTimeout });
 
     await preferenceService.updateForUser(userId, {
       theme,
@@ -32,6 +33,7 @@ export async function updatePreferencesForUser(req, res, next) {
 
     res.json({ message: "Preferences updated" });
   } catch (err) {
+    console.error('[preferences.controller] updatePreferencesForUser error', err);
     next(err);
   }
 }
