@@ -33,8 +33,25 @@ export async function uploadContract(file) {
   });
 
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Upload failed: ${res.status} ${text}`);
+    // Try to surface a clean error message from the backend
+    let message = "Upload failed";
+    let details = null;
+
+    try {
+      const data = await res.json();
+      message = data.error || message;
+      details = data;
+    } catch {
+      const text = await res.text();
+      message = text || message;
+    }
+
+    const error = new Error(message);
+    error.status = res.status;
+    if (details) {
+      error.details = details;
+    }
+    throw error;
   }
 
   return res.json();
