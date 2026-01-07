@@ -2882,3 +2882,29 @@ html.theme-dark .doc-list.doc-list--numbered span {
   font-size: 0.875rem;
 }
 
+/* Notification Badge */
+.notification-badge-wrapper {
+  display: flex;
+  align-items: center;
+  margin-right: 1rem;
+}
+
+.notification-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background-color: #ef4444;
+  color: #ffffff;
+  border-radius: 50%;
+  font-weight: 600;
+  font-size: 0.75rem;
+  min-width: 28px;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4);
+}
+
+.notification-badge:hover {
+  background-color: #dc2626;
+  cursor: pointer;
+}
