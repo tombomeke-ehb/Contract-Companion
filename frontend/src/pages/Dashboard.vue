@@ -32,7 +32,7 @@
       </div>
     </div>
 
-    <div style="display:flex; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap;">
+    <div style="display:flex; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap; align-items:center;">
       <select v-model="riskFilter" class="select" style="min-width:160px;">
         <option value="all">{{ $t('dashboard.filterRiskAll') }}</option>
         <option value="high">{{ $t('dashboard.filterRiskHigh') }}</option>
@@ -68,6 +68,14 @@
           style="width:100%;"
         />
       </div>
+      <button
+        type="button"
+        class="btn btn-outline"
+        :disabled="!isFiltering"
+        @click="resetFilters"
+      >
+        Reset filters
+      </button>
     </div>
 
     <section class="card" style="margin-bottom:2rem;">
@@ -290,6 +298,14 @@ const filteredReports = computed(() => {
   return filtered
 })
 
+const isFiltering = computed(() => {
+  const hasRisk = riskFilter.value !== 'all'
+  const hasYear = yearFilter.value !== 'all'
+  const hasMonth = monthFilter.value !== 'all'
+  const hasSearch = searchQuery.value.trim().length > 0
+  return hasRisk || hasYear || hasMonth || hasSearch
+})
+
 const highRiskCount = computed(() => reports.filter(r => r.risk === 'high').length)
 const thisMonthCount = computed(() => reports.filter(r => {
   const { month, year } = extractMonthYear(r.date)
@@ -307,6 +323,13 @@ function filterCurrentMonth() {
   yearFilter.value = currentYear
   monthFilter.value = currentMonthName
   riskFilter.value = 'all'
+}
+
+function resetFilters() {
+  riskFilter.value = 'all'
+  yearFilter.value = 'all'
+  monthFilter.value = 'all'
+  searchQuery.value = ''
 }
 
 const badgeClass = (risk) => {
