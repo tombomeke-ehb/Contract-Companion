@@ -266,8 +266,10 @@ const handleSubmit = async () => {
     const result = await uploadContract(selectedFile.value, form.contractType, form.notes)
     status.value = 'Upload successful. Generating your AI report...'
 
-    // Store the most recent report in the store for the detail page
+    // Debug: log the full result and report to console
+    console.log('[Upload.vue] Upload result:', result)
     if (result && result.report) {
+      console.log('[Upload.vue] Report object:', result.report)
       contractStore.setCurrentReport({
         id: result.docId,
         ...result.report,

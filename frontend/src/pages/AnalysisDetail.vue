@@ -110,7 +110,7 @@ const contractStore = useContractStore()
 const report = ref(null)
 
 const demoReports = {
-  '1': {
+  'demo-1': {
     title: 'Employment Agreement  Tech Corp',
     contractType: 'Employment',
     date: '15 Jan 2025',
@@ -137,7 +137,7 @@ const demoReports = {
       { title: 'Clarify bonus criteria', body: 'Define measurable performance targets for variable pay.' }
     ]
   },
-  '2': {
+  'demo-2': {
     title: 'NDA  Startup Inc',
     contractType: 'Confidentiality',
     date: '12 Jan 2025',
@@ -167,18 +167,25 @@ const demoReports = {
 }
 
 onMounted(async () => {
-  const id = route.params.id?.toString() || '1'
+  const id = route.params.id?.toString() || 'demo-1'
   // Prefer report from store (set after upload), fallback to demo
   if (contractStore.currentReport && contractStore.currentReport.id?.toString() === id) {
     report.value = contractStore.currentReport
   } else {
     // Fetch from backend if not in store
     try {
-      const res = await fetch(`/api/contracts/${id}`, { credentials: 'include' })
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:3443';
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await fetch(`${API_BASE_URL}/api/contracts/${id}`, {
+        credentials: 'include',
+        headers
+      })
       if (res.ok) {
         const data = await res.json()
-        // Prefer analysisJson if present
-        if (data.analysisJson) {
+        if (data.report) {
+          report.value = data.report
+        } else if (data.analysisJson) {
           report.value = data.analysisJson
         } else {
           report.value = data
@@ -197,13 +204,19 @@ const normalizedReport = computed(() => {
   const r = report.value
   if (!r) return null
   // If r has all expected fields, return as is
-  if (r.keyFindings && r.actions && r.breakdown && r.focus) return r
+  if (
+    typeof r.riskScore === 'number' &&
+    r.breakdown && Object.keys(r.breakdown).length > 0 &&
+    Array.isArray(r.actions) && r.actions.length > 0
+  ) {
+    return r
+  }
   // Otherwise, map legacy/summary shape to expected fields
   return {
     title: r.title || 'Contract',
     contractType: r.contractType || 'Contract',
     date: r.date || r.uploadedAt || '',
-    riskScore: r.riskScore ?? 5.0,
+    riskScore: typeof r.riskScore === 'number' ? r.riskScore : 0,
     risk: r.risk || 'medium',
     riskLabel: r.riskLabel || 'Medium risk',
     keySummary: r.keySummary || '',
@@ -211,7 +224,7 @@ const normalizedReport = computed(() => {
     keyFindings: r.keyFindings || [],
     summary: r.summary || r.text || '',
     focus: r.focus || [],
-    breakdown: r.breakdown || {},
+    breakdown: r.breakdown || { 'High-risk clauses': 0, 'Medium-risk clauses': 0, 'Low-risk clauses': 0 },
     actions: r.actions || [],
     clauses: r.clauses || {},
   }
