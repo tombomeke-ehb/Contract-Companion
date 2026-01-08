@@ -1,6 +1,18 @@
 import oracledb from "oracledb";
 import { query } from "../config/db.js";
 
+// Helper: Read Oracle LOB (CLOB) to string
+async function readLobToString(lob) {
+  return new Promise((resolve, reject) => {
+    if (!lob) return resolve(null);
+    let str = '';
+    lob.setEncoding('utf8');
+    lob.on('data', (chunk) => { str += chunk; });
+    lob.on('end', () => resolve(str));
+    lob.on('error', reject);
+  });
+}
+
 // Service for working with contract summaries and risk scores.
 // Maps between the SAMENVATTING (summary) table and higher level objects used in controllers.
 
@@ -211,24 +223,59 @@ export async function getContractWithSummary(idDoc) {
   `;
 
   const result = await query(sql, { idDoc });
-  if (!result.rows || result.rows.length === 0) return null;
+  if (!result.rows || result.rows.length === 0) {
+    console.log('[getContractWithSummary] No contract found for ID_DOC:', idDoc);
+    return null;
+  }
 
   const row = result.rows[0];
+  // Handle Oracle LOBs for text and analysisJson
+  let parsedJson = null;
+  let textStr = null;
+  if (row.ANALYSE_JSON) {
+    if (typeof row.ANALYSE_JSON === 'string') {
+      try {
+        parsedJson = JSON.parse(row.ANALYSE_JSON);
+      } catch (e) {
+        console.error('[getContractWithSummary] Failed to parse ANALYSE_JSON for ID_DOC:', idDoc, e, row.ANALYSE_JSON);
+      }
+    } else if (typeof row.ANALYSE_JSON === 'object' && row.ANALYSE_JSON !== null && typeof row.ANALYSE_JSON.on === 'function') {
+      // It's a LOB
+      const lobStr = await readLobToString(row.ANALYSE_JSON);
+      try {
+        parsedJson = JSON.parse(lobStr);
+      } catch (e) {
+        console.error('[getContractWithSummary] Failed to parse LOB ANALYSE_JSON for ID_DOC:', idDoc, e, lobStr);
+      }
+    }
+  } else {
+    console.log('[getContractWithSummary] No ANALYSE_JSON for ID_DOC:', idDoc);
+  }
+  if (row.TEKST) {
+    if (typeof row.TEKST === 'string') {
+      textStr = row.TEKST;
+    } else if (typeof row.TEKST === 'object' && row.TEKST !== null && typeof row.TEKST.on === 'function') {
+      textStr = await readLobToString(row.TEKST);
+    }
+  }
   return {
     id: row.ID_DOC,
     title: row.TITEL || "Contract",
     description: row.BESCHRIJVING || "",
     uploadedAt: row.UPLOADDATUM,
-    text: row.TEKST,
+    text: textStr,
     riskScore: row.RISK_SCORE,
-    analysisJson: row.ANALYSE_JSON ? JSON.parse(row.ANALYSE_JSON) : null,
+    analysisJson: parsedJson,
   };
 }
 
 // Verwijder een contract en bijbehorende samenvatting
 export async function deleteContractById(idDoc) {
-  // Eerst samenvatting verwijderen (foreign key constraint)
-  await query('DELETE FROM SAMENVATTING WHERE ID_DOC = :idDoc', { idDoc });
-  // Daarna document zelf verwijderen
-  await query('DELETE FROM DOCUMENTEN WHERE ID_DOC = :idDoc', { idDoc });
+  console.log('[deleteContractById] Start for ID_DOC:', idDoc);
+  const tables = ['KALENDER', 'EINDDATUM', 'ANALYSE_JSON', 'SAMENVATTING', 'DOCUMENTEN'];
+  for (const table of tables) {
+    const result = await query(`DELETE FROM ${table} WHERE ID_DOC = :idDoc`, { idDoc }, { autoCommit: true });
+    console.log(`[deleteContractById] Deleted from ${table}:`, result.rowsAffected);
+  }
+  console.log('[deleteContractById] Done for ID_DOC:', idDoc);
 }
