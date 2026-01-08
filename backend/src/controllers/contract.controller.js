@@ -37,7 +37,7 @@ export async function analyzeContract(req, res) {
     const aiResult = await analyzeContractText(fullText, contractType, notes);
 
     // 3. Extract risk score from LLM2 for persistence
-    const riskScore = aiResult?.llm2?.overallRiskScore ?? 5.0;
+    const riskScore = aiResult?.llm2?.overallRiskScore;
 
     // Use the JWT payload field "id" for the current user
     const userId = req.user?.id || null;
@@ -68,7 +68,6 @@ export async function analyzeContract(req, res) {
       report,
     });
   } catch (err) {
-    console.error("analyzeContract failed", err);
     res.status(500).json({
       success: false,
       error: "Analysis failed"
@@ -86,7 +85,6 @@ export async function getContracts(req, res) {
 
     res.json(contracts);
   } catch (err) {
-    console.error("getContracts failed", err);
     res.status(500).json({ error: "Failed to fetch contracts" });
   }
 }
@@ -99,14 +97,23 @@ export async function getContractDetail(req, res) {
       return res.status(400).json({ error: "Invalid contract id" });
     }
 
+    if (!req.user) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
     const contract = await getContractWithSummary(numericId);
     if (!contract) {
       return res.status(404).json({ error: "Contract not found" });
     }
 
-    res.json(contract);
+    const report = contract.analysisJson ? mapLlm2ToReport(contract.analysisJson, contract.id) : null;
+    const responseObj = { ...contract, report };
+    res.setHeader('Content-Type', 'application/json');
+    const safeResponse = { ...responseObj };
+    if (safeResponse.text && typeof safeResponse.text !== 'string') safeResponse.text = undefined;
+    if (safeResponse.analysisJson && typeof safeResponse.analysisJson !== 'object' && typeof safeResponse.analysisJson !== 'string') safeResponse.analysisJson = undefined;
+    res.json(safeResponse);
   } catch (err) {
-    console.error("getContractDetail failed", err);
     res.status(500).json({ error: "Failed to fetch contract" });
   }
 }
@@ -122,7 +129,6 @@ export async function deleteContract(req, res) {
     await deleteContractById(numericId);
     res.json({ success: true, removed: { id: numericId } });
   } catch (err) {
-    console.error('deleteContract error', err);
     res.status(500).json({ error: 'Failed to delete contract' });
   }
 }
@@ -133,7 +139,6 @@ export async function getCommonContracts(req, res) {
     const contracts = await commonContractService.getAllCommonContracts();
     res.json(contracts);
   } catch (err) {
-    console.error('getCommonContracts error', err);
     res.status(500).json({ error: 'Failed to fetch contracts' });
   }
 }
@@ -150,7 +155,6 @@ export async function createCommonContract(req, res) {
     const contract = await commonContractService.createCommonContract(body);
     res.status(201).json(contract);
   } catch (err) {
-    console.error('createCommonContract error', err);
     if (err.message?.includes('unique constraint')) {
       return res.status(409).json({ error: 'Contract with this id already exists' });
     }
@@ -166,7 +170,6 @@ export async function updateCommonContract(req, res) {
     const updated = await commonContractService.updateCommonContract(id, body);
     res.json(updated);
   } catch (err) {
-    console.error('updateCommonContract error', err);
     if (err.message === 'Contract not found') {
       return res.status(404).json({ error: 'Not found' });
     }
@@ -180,7 +183,6 @@ export async function deleteCommonContract(req, res) {
     const result = await commonContractService.deleteCommonContract(id);
     res.json({ success: true, removed: { id } });
   } catch (err) {
-    console.error('deleteCommonContract error', err);
     if (err.message === 'Contract not found') {
       return res.status(404).json({ error: 'Not found' });
     }
