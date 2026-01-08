@@ -10,7 +10,6 @@ export const useUserStore = defineStore('user', () => {
   const preferences = ref({ theme: 'light', lang: 'nl' })
 
   function setUser(userData) {
-    console.debug('[userStore] setUser', userData)
     user.value = userData
     isAdmin.value = userData?.isAdmin ?? false
     // Persist to localStorage
@@ -21,7 +20,6 @@ export const useUserStore = defineStore('user', () => {
 
   async function loadPreferences() {
     if (!user.value?.id) {
-      console.debug('[userStore] loadPreferences: no user')
       return
     }
     try {
@@ -33,12 +31,9 @@ export const useUserStore = defineStore('user', () => {
         region: prefsRaw.REGION ?? null,
         sessionTimeout: prefsRaw.SESSION_TIMEOUT ?? 30
       }
-      console.debug('[userStore] loaded preferences from backend', prefs)
       preferences.value = prefs
       applyTheme(prefs.theme)
-      console.debug('[userStore] applied theme', prefs.theme)
     } catch (err) {
-      console.error('[userStore] failed to load preferences', err)
       preferences.value = { theme: 'light', lang: 'nl' }
       applyTheme('light')
     }
@@ -63,7 +58,6 @@ export const useUserStore = defineStore('user', () => {
         const userData = JSON.parse(stored)
         setUser(userData)
       } catch (err) {
-        console.error('Failed to parse stored user', err)
         logout()
       }
     }
