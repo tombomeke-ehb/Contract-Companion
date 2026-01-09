@@ -37,7 +37,9 @@ export async function analyzeContract(req, res) {
     const aiResult = await analyzeContractText(fullText, contractType, notes);
 
     // 3. Extract risk score from LLM2 for persistence
-    const riskScore = aiResult?.llm2?.overallRiskScore;
+    // Haal riskScore uit report als fallback
+    const report = mapLlm2ToReport(aiResult.llm2);
+    const riskScore = report.riskScore ?? aiResult?.llm2?.riskScore ?? aiResult?.llm2?.overallRiskScore;
 
     // Use the JWT payload field "id" for the current user
     const userId = req.user?.id || null;
@@ -55,9 +57,6 @@ export async function analyzeContract(req, res) {
       endDate: null,
       analysisJson: JSON.stringify(aiResult.llm2)
     });
-
-    // 4. Map LLM2 output to a report shape expected by the frontend
-    const report = mapLlm2ToReport(aiResult.llm2, docId);
 
     // 5. Respond to the frontend with all building blocks
     res.json({
