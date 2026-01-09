@@ -272,7 +272,7 @@ export async function getContractWithSummary(idDoc) {
 // Verwijder een contract en bijbehorende samenvatting
 export async function deleteContractById(idDoc) {
   console.log('[deleteContractById] Start for ID_DOC:', idDoc);
-  const tables = ['KALENDER', 'EINDDATUM', 'ANALYSE_JSON', 'SAMENVATTING', 'DOCUMENTEN'];
+  const tables = ['KALENDER', 'EINDDATUM', 'SAMENVATTING', 'DOCUMENTEN'];
   for (const table of tables) {
     const result = await query(`DELETE FROM ${table} WHERE ID_DOC = :idDoc`, { idDoc }, { autoCommit: true });
     console.log(`[deleteContractById] Deleted from ${table}:`, result.rowsAffected);
