@@ -5,18 +5,17 @@ import jwt from "jsonwebtoken";
 // REGISTER
 export async function registerUser(req, res) {
   try {
-    console.log("REQ BODY =", req.body);
-
-    const { name, surname, email, password } = req.body;
+    // Ne pas logger le mot de passe en clair ni les données sensibles
+    const { name, surname, email, password } = req.body || {};
 
     if (!name || !surname || !email || !password) {
       return res.status(400).json({ error: "Please fill in all fields (including last name)." });
     }
 
-    // Basic password policy: min 8 chars, at least 1 letter and 1 digit
-    const pwdOk = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(password);
+    // Basic password policy: minimum 8 characters
+    const pwdOk = typeof password === "string" && password.length >= 8;
     if (!pwdOk) {
-      return res.status(400).json({ error: "Password must be at least 8 characters and include a letter and a number." });
+      return res.status(400).json({ error: "Password must be at least 8 characters." });
     }
 
     // Check if user already exists
@@ -28,20 +27,33 @@ export async function registerUser(req, res) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user (surname is required)
-    await createUser(name, email, hashedPassword, surname);
+    // Create user (surname is required) and get basic info back (including new ID)
+    const createdUser = await createUser(name, email, hashedPassword, surname);
 
-    // Fetch the newly created user to get the ID
-    const newUser = await findUserByEmail(email);
+    // If JWT secret is missing, we still confirm account creation
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.warn("JWT_SECRET is not defined. Returning response without token.");
+      return res.status(201).json({
+        message: "Account created. Please log in.",
+        user: {
+          id: createdUser.id,
+          name: createdUser.name,
+          surname: createdUser.surname,
+          email: createdUser.email,
+          isAdmin: createdUser.isAdmin === 1,
+        },
+      });
+    }
 
     // Create JWT token for auto-login
     const token = jwt.sign(
       {
-        id: newUser.ID_USER,
-        email: newUser.EMAIL,
-        isAdmin: newUser.ISADMIN === 1,
+        id: createdUser.id,
+        email: createdUser.email,
+        isAdmin: createdUser.isAdmin === 1,
       },
-      process.env.JWT_SECRET,
+      jwtSecret,
       { expiresIn: "2h" }
     );
 
@@ -50,11 +62,11 @@ export async function registerUser(req, res) {
       message: "Account created.",
       token,
       user: {
-        id: newUser.ID_USER,
-        name: newUser.NAME,
-        surname: newUser.SURNAME,
-        email: newUser.EMAIL,
-        isAdmin: newUser.ISADMIN === 1,
+        id: createdUser.id,
+        name: createdUser.name,
+        surname: createdUser.surname,
+        email: createdUser.email,
+        isAdmin: createdUser.isAdmin === 1,
       },
     });
 

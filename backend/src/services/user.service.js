@@ -33,7 +33,7 @@ export async function createUser(name, email, hashedPassword, surname = null) {
     VALUES (:nextId, :name, :surname, :email, :password, :isAdmin)
   `;
 
-  return await query(
+  await query(
     sql,
     {
       nextId,
@@ -45,6 +45,15 @@ export async function createUser(name, email, hashedPassword, surname = null) {
     },
     { autoCommit: true }
   );
+
+  // Return a simple user-object so the caller doesn't need an extra SELECT
+  return {
+    id: nextId,
+    name,
+    surname: finalSurname,
+    email,
+    isAdmin: 0,
+  };
 }
 
 // ==============================
