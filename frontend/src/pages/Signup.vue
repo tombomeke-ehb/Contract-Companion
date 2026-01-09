@@ -128,7 +128,12 @@ const handleSignup = async () => {
 
     router.push({ name: 'dashboard' })
   } catch (err) {
-    error.value = err.message || 'Signup failed. Please try again.'
+    // Prefer backend "error" field, then generic message
+    if (err && typeof err === 'object') {
+      error.value = err.error || err.message || 'Signup failed. Please try again.'
+    } else {
+      error.value = 'Signup failed. Please try again.'
+    }
   } finally {
     isSubmitting.value = false
   }
