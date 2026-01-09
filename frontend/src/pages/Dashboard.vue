@@ -115,6 +115,9 @@
             >
               {{ $t('dashboard.view') }}
             </RouterLink>
+            <button class="btn btn-danger" style="margin-left:0.5rem;" @click.stop="handleDelete(report.id)">
+              {{ $t('dashboard.delete') || 'Delete' }}
+            </button>
           </div>
         </li>
       </transition-group>
@@ -126,11 +129,12 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useUserStore } from '../stores/userStore'
+import { getContracts as fetchContracts, deleteContract } from '../api/contracts'
 
-const reports = [
+const demoReports = [
   {
     id: 1,
     title: 'Employment Agreement  Tech Corp',
@@ -205,6 +209,37 @@ const reports = [
   }
 ]
 
+const reports = ref([])
+
+onMounted(async () => {
+  try {
+    const backendContracts = await fetchContracts()
+    const mapped = backendContracts.map((c) => {
+      // Normalize risk from riskLabel if needed
+      let risk = c.risk
+      if (!risk && c.riskLabel) {
+        const label = c.riskLabel.toLowerCase()
+        if (label.includes('high')) risk = 'high'
+        else if (label.includes('medium')) risk = 'medium'
+        else if (label.includes('low')) risk = 'low'
+        else risk = 'medium'
+      }
+      return {
+        ...c,
+        risk,
+        date: typeof c.date === 'string' ? c.date : new Date(c.date).toLocaleDateString('en-GB', {
+          day: '2-digit', month: 'short', year: 'numeric'
+        })
+      }
+    })
+    // Fallback: toon demoReports alleen als er geen echte contracten zijn
+    reports.value = mapped.length > 0 ? mapped : demoReports
+  } catch (e) {
+    // Fallback: als backend faalt, toon demoReports
+    reports.value = demoReports
+  }
+})
+
 const riskFilter = ref('all')
 const yearFilter = ref('all')
 const monthFilter = ref('all')
@@ -244,7 +279,7 @@ function extractMonthYear(dateStr) {
 
 const years = computed(() => {
   const set = new Set()
-  reports.forEach(r => {
+  ;(reports.value || []).forEach(r => {
     const { year } = extractMonthYear(r.date)
     if (year) set.add(year)
   })
@@ -273,7 +308,7 @@ const userStore = useUserStore()
 const displayName = computed(() => userStore.user?.name || userStore.user?.email || '')
 
 const filteredReports = computed(() => {
-  let filtered = reports
+  let filtered = reports.value
   if (riskFilter.value !== 'all') {
     filtered = filtered.filter((report) => report.risk === riskFilter.value)
   }
@@ -306,8 +341,8 @@ const isFiltering = computed(() => {
   return hasRisk || hasYear || hasMonth || hasSearch
 })
 
-const highRiskCount = computed(() => reports.filter(r => r.risk === 'high').length)
-const thisMonthCount = computed(() => reports.filter(r => {
+const highRiskCount = computed(() => reports.value.filter(r => r.risk === 'high').length)
+const thisMonthCount = computed(() => reports.value.filter(r => {
   const { month, year } = extractMonthYear(r.date)
   return month === currentMonthName && year === currentYear
 }).length)
@@ -359,5 +394,15 @@ const hasDates = (id) => {
 const router = useRouter()
 function goToReport(id) {
   router.push({ name: 'report-detail', params: { id } })
+}
+
+function handleDelete(reportId) {
+  if (confirm('Are you sure you want to delete this contract?')) {
+    deleteContract(reportId)
+      .then(() => {
+        reports.value = reports.value.filter(r => r.id !== reportId)
+      })
+      .catch(() => alert('Failed to delete contract.'))
+  }
 }
 </script>

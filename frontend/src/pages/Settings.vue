@@ -91,6 +91,7 @@
 import { reactive, ref, watch, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/authStore'
+import { useUserStore } from '../stores/userStore'
 
 import { applyTheme, persistThemeToStorage } from '../theme'
 
@@ -99,8 +100,9 @@ const API_BASE_URL = import.meta.env.VITE_API_URL
 const { locale, t } = useI18n()
 const authStore = useAuthStore()
 
-// Get user ID from auth store, fallback to 1 if not available
-const userId = computed(() => authStore.user?.id || 1)
+const userStore = useUserStore()
+
+const userId = computed(() => userStore.user?.id)
 
 // Keys for localStorage so we can persist across navigations
 const STORAGE_KEYS = {
@@ -222,6 +224,7 @@ watch(
 watch(
   () => form.theme,
   (newTheme) => {
+    console.debug('[Settings] theme changed', newTheme)
     applyTheme(newTheme)
   }
 )
@@ -243,6 +246,10 @@ onMounted(async () => {
 
   // step 2: sync with backend preferences; this overwrites only
   // if backend has something set, otherwise keep current (possibly local) values.
+  if (!userId.value) {
+    console.warn('Geen geldige gebruiker, sla settings laden over')
+    return
+  }
   try {
     const response = await fetch(`${API_BASE_URL}/api/preferences/${userId.value}`, {
       headers: getAuthHeaders(),
@@ -251,15 +258,23 @@ onMounted(async () => {
     if (!response.ok) throw new Error('Failed to load preferences')
     const data = await response.json()
 
+    // Map backend fields to frontend
     if (data.THEME && THEME_CLASS_MAP[data.THEME]) {
       form.theme = data.THEME
     }
     if (data.LANG) {
       form.language = mapCodeToUi(data.LANG)
     }
-    // load persisted session timeout from backend (minutes)
     if (data.SESSION_TIMEOUT) {
       form.sessionTimeout = String(data.SESSION_TIMEOUT)
+    }
+
+    // Directly update userStore preferences if available
+    if (userStore && userStore.preferences) {
+      userStore.preferences.theme = data.THEME || 'light'
+      userStore.preferences.lang = data.LANG || 'nl'
+      userStore.preferences.region = data.REGION ?? null
+      userStore.preferences.sessionTimeout = data.SESSION_TIMEOUT ?? 30
     }
 
     applyTheme(form.theme)
@@ -294,6 +309,7 @@ const saveSettings = async () => {
     language: mapUiToCode(form.language),
     sessionTimeout: Number(form.sessionTimeout)
   }
+  console.debug('[Settings] saveSettings payload', payload)
 
   try {
     const response = await fetch(`${API_BASE_URL}/api/preferences/${userId.value}`, {

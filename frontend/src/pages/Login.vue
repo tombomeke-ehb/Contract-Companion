@@ -70,6 +70,7 @@ const onLogin = async () => {
     // persist auth in both stores
     authStore.setAuth({ token: data.token, user: data.user })
     userStore.setUser(data.user)
+    await userStore.loadPreferences() // Load and apply theme from backend
 
     const name = data.user?.name || data.user?.email || ''
     notifications.push({

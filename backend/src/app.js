@@ -7,7 +7,7 @@ import path from "path";
 import contractRoutes from "./routes/contract.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import authRoutes from "./routes/auth.routes.js";
-import preferenceRoutes from "./routes/preference.routes.js";
+import preferencesRoutes from "./routes/preferences.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import calendarRoutes from "./routes/calendar.routes.js";
 
@@ -49,7 +49,7 @@ app.use("/api/contracts", contractRoutes);
 app.use("/api/users", userRoutes);
 
 app.use("/api/auth", authRoutes);
-app.use("/api/preferences", preferenceRoutes);
+app.use("/api/preferences", preferencesRoutes);
 app.use("/api", adminRoutes);
 app.use("/api/people", peopleRoutes);
 app.use("/api", calendarRoutes);

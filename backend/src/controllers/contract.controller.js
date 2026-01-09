@@ -1,8 +1,10 @@
 // backend/src/controllers/contract.controller.js
 
-import AI from "../services/ai.service.js";
+import fs from "fs/promises";
 import { processContractPdf } from "../services/documentOCR.service.js";
-import { createSummary } from "../services/contract.service.js";
+import { createDocumentWithSummary, listUserContracts, getContractWithSummary, deleteContractById } from "../services/contract.service.js";
+import { analyzeContractText } from "../services/ai-orchestrator.service.js";
+import { mapLlm2ToReport } from "../services/report-mapper.service.js";
 import * as commonContractService from "../services/commonContract.service.js";
 
 // Upload + OCR + AI analyse (ingelogde users)
@@ -21,25 +23,50 @@ export async function analyzeContract(req, res) {
     const document = await processContractPdf(filePath);
     const fullText = document.text || "";
 
-    // AI analyse execute
-    const aiResult = await AI.analyzeContract(filePath, fullText);
+    // Uploaded bestand opruimen - we bewaren enkel de tekst/AI-resultaten
+    try {
+      await fs.unlink(filePath);
+    } catch (e) {
+      console.warn("Could not delete uploaded file", e);
+    }
 
-    const riskScore = aiResult?.riskScore ?? 5.0;
+    const contractType = req.body?.contractType || "";
+    const notes = req.body?.notes || "";
 
-    // summary saving
-    await createSummary({
-      idDoc: null,
-      text: fullText,
-      riskScore
+    // 2. Run new two-stage AI pipeline on the OCR text, passing contractType and notes
+    const aiResult = await analyzeContractText(fullText, contractType, notes);
+
+    // 3. Extract risk score from LLM2 for persistence
+    // Haal riskScore uit report als fallback
+    const report = mapLlm2ToReport(aiResult.llm2);
+    const riskScore = report.riskScore ?? aiResult?.llm2?.riskScore ?? aiResult?.llm2?.overallRiskScore;
+
+    // Use the JWT payload field "id" for the current user
+    const userId = req.user?.id || null;
+    const docType = Number(contractType) || 1; // Ensure docType is a number
+    const title = req.file.originalname || "Uploaded contract";
+    const description = notes;
+
+    const { docId } = await createDocumentWithSummary({
+      userId,
+      docType,
+      title,
+      description,
+      fullText,
+      riskScore,
+      endDate: null,
+      analysisJson: JSON.stringify(aiResult.llm2)
     });
 
+    // 5. Respond to the frontend with all building blocks
     res.json({
       success: true,
+      docId,
       ocrText: fullText,
-      ai: aiResult
+      ai: aiResult,
+      report,
     });
   } catch (err) {
-    console.error("analyzeContract failed", err);
     res.status(500).json({
       success: false,
       error: "Analysis failed"
@@ -49,17 +76,60 @@ export async function analyzeContract(req, res) {
 
 // fetching contracts
 export async function getContracts(req, res) {
-  // Admin sees all contracts, normal users only theirs
-  if (req.user.isAdmin) {
-    return res.json([
-      { id: 1, name: "Admin contract A" },
-      { id: 2, name: "Admin contract B" }
-    ]);
-  }
+  try {
+    const isAdmin = !!req.user?.isAdmin;
+    const userId = req.user?.id ?? null;
 
-  return res.json([
-    { id: 3, name: "User contract" }
-  ]);
+    const contracts = await listUserContracts({ userId, isAdmin });
+
+    res.json(contracts);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch contracts" });
+  }
+}
+
+export async function getContractDetail(req, res) {
+  try {
+    const { id } = req.params;
+    const numericId = Number(id);
+    if (!numericId) {
+      return res.status(400).json({ error: "Invalid contract id" });
+    }
+
+    if (!req.user) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    const contract = await getContractWithSummary(numericId);
+    if (!contract) {
+      return res.status(404).json({ error: "Contract not found" });
+    }
+
+    const report = contract.analysisJson ? mapLlm2ToReport(contract.analysisJson, contract.id) : null;
+    const responseObj = { ...contract, report };
+    res.setHeader('Content-Type', 'application/json');
+    const safeResponse = { ...responseObj };
+    if (safeResponse.text && typeof safeResponse.text !== 'string') safeResponse.text = undefined;
+    if (safeResponse.analysisJson && typeof safeResponse.analysisJson !== 'object' && typeof safeResponse.analysisJson !== 'string') safeResponse.analysisJson = undefined;
+    res.json(safeResponse);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch contract" });
+  }
+}
+
+// Verwijder contract (user + admin)
+export async function deleteContract(req, res) {
+  try {
+    const { id } = req.params;
+    const numericId = Number(id);
+    if (!numericId) {
+      return res.status(400).json({ error: 'Invalid contract id' });
+    }
+    await deleteContractById(numericId);
+    res.json({ success: true, removed: { id: numericId } });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete contract' });
+  }
 }
 
 // Database-backed admin common contracts CRUD
@@ -68,7 +138,6 @@ export async function getCommonContracts(req, res) {
     const contracts = await commonContractService.getAllCommonContracts();
     res.json(contracts);
   } catch (err) {
-    console.error('getCommonContracts error', err);
     res.status(500).json({ error: 'Failed to fetch contracts' });
   }
 }
@@ -85,7 +154,6 @@ export async function createCommonContract(req, res) {
     const contract = await commonContractService.createCommonContract(body);
     res.status(201).json(contract);
   } catch (err) {
-    console.error('createCommonContract error', err);
     if (err.message?.includes('unique constraint')) {
       return res.status(409).json({ error: 'Contract with this id already exists' });
     }
@@ -101,7 +169,6 @@ export async function updateCommonContract(req, res) {
     const updated = await commonContractService.updateCommonContract(id, body);
     res.json(updated);
   } catch (err) {
-    console.error('updateCommonContract error', err);
     if (err.message === 'Contract not found') {
       return res.status(404).json({ error: 'Not found' });
     }
@@ -115,7 +182,6 @@ export async function deleteCommonContract(req, res) {
     const result = await commonContractService.deleteCommonContract(id);
     res.json({ success: true, removed: { id } });
   } catch (err) {
-    console.error('deleteCommonContract error', err);
     if (err.message === 'Contract not found') {
       return res.status(404).json({ error: 'Not found' });
     }

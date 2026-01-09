@@ -7,10 +7,12 @@ import { processContractPdf } from "../services/documentOCR.service.js";
 import {
   analyzeContract,
   getContracts,
+  getContractDetail,
   getCommonContracts,
   createCommonContract,
   updateCommonContract,
   deleteCommonContract,
+  deleteContract
 } from "../controllers/contract.controller.js";
 
 const router = express.Router();
@@ -90,7 +92,13 @@ router.post("/upload-raw", uploadWithValidation, async (req, res) => {
 // admin sees all, user only their own
 router.get("/", getContracts);
 
-// Admin-manageable "common contracts" library
+// Detail van één contract (voor later detailweergave / debug)
+router.get("/:id", getContractDetail);
+
+// Verwijder contract
+router.delete("/:id", deleteContract);
+
+// Admin-manageable "common contracts" library (admin only voor beheer)
 router.post("/common", isAdmin, createCommonContract);
 router.put("/common/:id", isAdmin, updateCommonContract);
 router.delete("/common/:id", isAdmin, deleteCommonContract);
