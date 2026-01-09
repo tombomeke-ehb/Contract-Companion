@@ -82,7 +82,34 @@ export async function createPerson({ name, surname = "", email, passwordHash, is
   return nextId;
 }
 
+// Delete all contract-related records for a given user (but not the user itself)
+export async function deleteUserContracts(id) {
+  // Order matters because of foreign key-like relationships on ID_DOC
+  const tablesWithIdDoc = ["KALENDER", "EINDDATUM", "SAMENVATTING"];
+  for (const table of tablesWithIdDoc) {
+    await query(
+      `DELETE FROM ${table} WHERE ID_DOC IN (SELECT ID_DOC FROM DOCUMENTEN WHERE ID_USER = :id)`,
+      { id },
+      { autoCommit: true }
+    );
+  }
+
+  // Then delete the documents themselves for this user
+  const docResult = await query(
+    `DELETE FROM DOCUMENTEN WHERE ID_USER = :id`,
+    { id },
+    { autoCommit: true }
+  );
+
+  return docResult.rowsAffected || 0;
+}
+
+// Delete the user and all their contracts
 export async function deletePerson(id) {
+  // First remove all contracts for this user
+  await deleteUserContracts(id);
+
+  // Finally delete the user record
   const result = await query(
     `DELETE FROM USERS WHERE ID_USER = :id`,
     { id },
