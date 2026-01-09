@@ -2,13 +2,13 @@
   <section class="container" v-if="normalizedReport">
     <header class="card analysis-header" style="margin-bottom:2rem;">
       <div>
-        <p class="page-eyebrow">{{ normalizedReport.contractType }} contract</p>
-        <h1 class="section-title">{{ normalizedReport.title }}</h1>
+        <p class="page-eyebrow">{{ report.contractType }} contract</p>
+        <h1 class="section-title">{{ report.title }}</h1>
         <div style="display:flex; gap:1.5rem; align-items:center; margin:1.5rem 0 0.5rem 0;">
           <!-- Risk score circle component -->
-          <RiskScoreCircle :score="normalizedReport.riskScore" :color="getRiskScoreColor(normalizedReport.riskScore)" />
-          <span class="badge" :class="riskBadgeClass">{{ normalizedReport.riskLabel }}</span>
-          <span class="card-subtitle">Analyzed on {{ normalizedReport.date }}</span>
+          <RiskScoreCircle :score="report.riskScore" :color="getRiskScoreColor(report.riskScore)" />
+          <span class="badge" :class="riskBadgeClass">{{ report.riskLabel }}</span>
+          <span class="card-subtitle">Analyzed on {{ report.date }}</span>
           <a class="btn btn-outline" href="javascript:void(0)">Download report</a>
         </div>
       </div>
@@ -18,7 +18,9 @@
       <h2 class="card-title">Contract Dates & Calendar</h2>
       <p class="card-subtitle">Set contract start/end and schedule a reminder in one place.</p>
 
-      <div style="display:grid; gap:1rem; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); align-items:flex-start; margin-top:1rem;">
+      <div
+        style="display:grid; gap:1rem; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); align-items:flex-start; margin-top:1rem;"
+      >
         <div class="form-group" style="margin:0;">
           <label class="label">Contract Start Date & Time</label>
           <input v-model="contractStartDate" type="datetime-local" class="input" />
@@ -73,7 +75,7 @@
     </article>
 
     <div style="margin-bottom:2rem;">
-      <div class="card" style="background:#f9fafb; margin-bottom:0;">
+      <div class="card" style="margin-bottom:0;">
         <h2 class="card-title" style="font-size:1.1rem; margin-bottom:0.5rem;">Summary</h2>
         <p style="font-size:1rem; color:var(--text);">
           {{ normalizedReport.humanSummary }}
@@ -121,7 +123,10 @@
           <h3 style="margin-bottom:0.25rem;">{{ key.charAt(0).toUpperCase() + key.slice(1) }}</h3>
           <div v-if="clause.present">
             <p><strong>Text:</strong> {{ clause.text }}</p>
-            <p><strong>Risk:</strong> <span :class="'risk-' + clause.risk">{{ clause.risk }}</span></p>
+            <p>
+              <strong>Risk:</strong>
+              <span :class="'risk-' + clause.risk">{{ clause.risk }}</span>
+            </p>
             <ul v-if="clause.issues && clause.issues.length">
               <li v-for="issue in clause.issues" :key="issue">{{ issue }}</li>
             </ul>
@@ -147,98 +152,40 @@
     </article>
   </section>
   <section v-else class="container">
-    <p class="card-subtitle">No report data available.</p>
+    <article class="card">
+      <h2 class="card-title">Loading report…</h2>
+      <p v-if="loading" class="card-subtitle">Please wait while we load your contract analysis.</p>
+      <p v-else class="card-subtitle" style="color:var(--danger);">
+        {{ loadError || 'Report could not be loaded.' }}
+      </p>
+    </article>
   </section>
 </template>
 
 <script setup>
-import { computed, ref, watch, onMounted } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import RiskScoreCircle from '../components/RiskScoreCircle.vue'
+import { buildGoogleCalendarUrl, downloadIcsClient } from '../utils/calendar'
+import { downloadServerIcs as downloadServerIcsApi } from '../api/calendar'
 import { useContractStore } from '../stores/contractStore'
+import { getContractById } from '../api/contracts'
 
+/**
+ * Get color for risk score circle based on score value
+ * Green: low risk (<5), Orange: medium (5-6), Red: high (>6)
+ * @param {number} score
+ * @returns {string} color
+ */
 function getRiskScoreColor(score) {
   if (score < 5) return '#16a34a' // green
   if (score < 6) return '#f97316' // orange
   return '#ef4444' // red
 }
 
-const route = useRoute()
-const contractStore = useContractStore()
-const report = ref(null)
-
-// Calendar/reminder feature refs
-const contractStartDate = ref('')
-const contractEndDate = ref('')
-const dateSaveSuccess = ref('')
-const dateSaveError = ref('')
-const eventDate = ref('')
-const durationMinutes = ref(60)
-const calendarError = ref('')
-const calendarSuccess = ref('')
-const downloading = ref(false)
-
-// Load saved contract dates on mount
-const contractId = route.params.id || '1'
-const savedDates = localStorage.getItem(`contract_dates_${contractId}`)
-if (savedDates) {
-  const parsed = JSON.parse(savedDates)
-  contractStartDate.value = parsed.startDate || ''
-  contractEndDate.value = parsed.endDate || ''
-  if (parsed.endDate) {
-    eventDate.value = parsed.endDate
-  }
-}
-
-watch(
-  () => contractEndDate.value,
-  (val) => {
-    if (val) {
-      eventDate.value = val
-    }
-  }
-)
-
-function saveContractDates() {
-  dateSaveSuccess.value = ''
-  dateSaveError.value = ''
-  if (!contractStartDate.value && !contractEndDate.value) {
-    dateSaveError.value = 'Please enter at least one date.'
-    return
-  }
-  const contractData = {
-    contractId: contractId,
-    title: report.value?.title,
-    startDate: contractStartDate.value,
-    endDate: contractEndDate.value,
-    savedAt: new Date().toISOString()
-  }
-  localStorage.setItem(`contract_dates_${contractId}`, JSON.stringify(contractData))
-  const allContracts = JSON.parse(localStorage.getItem('all_contract_dates') || '[]')
-  const existingIndex = allContracts.findIndex(c => c.contractId === contractId)
-  if (existingIndex >= 0) {
-    allContracts[existingIndex] = contractData
-  } else {
-    allContracts.push(contractData)
-  }
-  localStorage.setItem('all_contract_dates', JSON.stringify(allContracts))
-  dateSaveSuccess.value = 'Contract dates saved successfully!'
-  setTimeout(() => {
-    dateSaveSuccess.value = ''
-  }, 3000)
-}
-
-const eventPayload = computed(() => {
-  if (!eventDate.value) return null
-  const start = new Date(eventDate.value)
-  if (Number.isNaN(start.getTime())) return null
-  const durationMs = Math.max(15, Number(durationMinutes.value) || 60) * 60 * 1000
-  const end = new Date(start.getTime() + durationMs)
-  return { start, end, title: report.value?.title || 'Contract Reminder' }
-})
-
-const demoReports = {
-  'demo-1': {
+// Demo reports used only for the "Common contracts" examples
+const reports = {
+  '1': {
     title: 'Employment Agreement  Tech Corp',
     contractType: 'Employment',
     date: '15 Jan 2025',
@@ -248,11 +195,21 @@ const demoReports = {
     keySummary: 'Three high-risk clauses and five medium-risk clauses detected.',
     humanSummary: 'Dit contract bevat een strenge non-compete, eenzijdige beëindigingsvoorwaarden en een variabel bonussysteem zonder duidelijke criteria. Extra aandacht vereist voor de belangen van de werknemer.',
     keyFindings: [
-      { title: 'Non-compete scope', body: 'Geographical limit is undefined and the duration exceeds 24 months.' },
-      { title: 'Termination clause', body: 'No mutual notice period and termination for convenience only favours the employer.' },
-      { title: 'Bonus structure', body: 'Variable compensation lacks a measurable performance framework.' }
+      {
+        title: 'Non-compete scope',
+        body: 'Geographical limit is undefined and the duration exceeds 24 months.'
+      },
+      {
+        title: 'Termination clause',
+        body: 'No mutual notice period and termination for convenience only favours the employer.'
+      },
+      {
+        title: 'Bonus structure',
+        body: 'Variable compensation lacks a measurable performance framework.'
+      }
     ],
-    summary: 'This agreement outlines the collaboration between Tech Corp and John Doe. The monthly retainer and responsibilities are clear, but risk exposure is driven by a strict non-compete and uneven termination conditions.',
+    summary:
+      'This agreement outlines the collaboration between Tech Corp and John Doe. The monthly retainer and responsibilities are clear, but risk exposure is driven by a strict non-compete and uneven termination conditions.',
     focus: ['Employment', 'Compensation', 'Non-compete'],
     breakdown: {
       'High-risk clauses': 3,
@@ -260,12 +217,21 @@ const demoReports = {
       'Low-risk clauses': 4
     },
     actions: [
-      { title: 'Reduce non-compete window', body: 'Limit the non-compete to 12 months and specify the region.' },
-      { title: 'Add mutual notice period', body: 'Ensure both parties have equal rights to terminate with notice.' },
-      { title: 'Clarify bonus criteria', body: 'Define measurable performance targets for variable pay.' }
+      {
+        title: 'Reduce non-compete window',
+        body: 'Limit the non-compete to 12 months and specify the region.'
+      },
+      {
+        title: 'Add mutual notice period',
+        body: 'Ensure both parties have equal rights to terminate with notice.'
+      },
+      {
+        title: 'Clarify bonus criteria',
+        body: 'Define measurable performance targets for variable pay.'
+      }
     ]
   },
-  'demo-2': {
+  '2': {
     title: 'NDA  Startup Inc',
     contractType: 'Confidentiality',
     date: '12 Jan 2025',
@@ -275,11 +241,21 @@ const demoReports = {
     keySummary: 'One obligation mismatch and two clauses worth revisiting.',
     humanSummary: 'Deze NDA bevat een brede definitie van vertrouwelijke informatie, een residu-clausule zonder duidelijke grenzen en een rechtskeuze die niet aansluit bij de operationele regio.',
     keyFindings: [
-      { title: 'Definition of confidential information', body: 'Includes information that was already public knowledge.' },
-      { title: 'Residuals clause', body: 'Allows engineers to reuse learnings without clarifying limits.' },
-      { title: 'Governing law', body: 'Defaults to US law while both parties operate in Belgium.' }
+      {
+        title: 'Definition of confidential information',
+        body: 'Includes information that was already public knowledge.'
+      },
+      {
+        title: 'Residuals clause',
+        body: 'Allows engineers to reuse learnings without clarifying limits.'
+      },
+      {
+        title: 'Governing law',
+        body: 'Defaults to US law while both parties operate in Belgium.'
+      }
     ],
-    summary: 'Overall the NDA is balanced, but the governing law and residuals clause should align with EU privacy expectations.',
+    summary:
+      'Overall the NDA is balanced, but the governing law and residuals clause should align with EU privacy expectations.',
     focus: ['NDA', 'Confidentiality'],
     breakdown: {
       'High-risk clauses': 1,
@@ -287,9 +263,18 @@ const demoReports = {
       'Low-risk clauses': 6
     },
     actions: [
-      { title: 'Sharpen confidential definition', body: 'Exclude information the receiving party already possessed.' },
-      { title: 'Clarify residuals', body: 'Limit use of learnings to anonymised patterns.' },
-      { title: 'Update governing law', body: 'Switch to Belgian law for easier enforcement.' }
+      {
+        title: 'Sharpen confidential definition',
+        body: 'Exclude information the receiving party already possessed.'
+      },
+      {
+        title: 'Clarify residuals',
+        body: 'Limit use of learnings to anonymised patterns.'
+      },
+      {
+        title: 'Update governing law',
+        body: 'Switch to Belgian law for easier enforcement.'
+      }
     ]
   },
   '3': {
@@ -531,49 +516,112 @@ const demoReports = {
   }
 }
 
-onMounted(async () => {
-  const id = route.params.id?.toString() || 'demo-1'
-  // Prefer report from store (set after upload), fallback to demo
-  if (contractStore.currentReport && contractStore.currentReport.id?.toString() === id) {
-    report.value = contractStore.currentReport
-  } else {
-    // Fetch from backend if not in store
-    try {
-      const token = localStorage.getItem('token');
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:3443';
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const res = await fetch(`${API_BASE_URL}/api/contracts/${id}`, {
-        credentials: 'include',
-        headers
-      })
-      if (res.ok) {
-        const data = await res.json()
-        if (data.report) {
-          report.value = data.report
-        } else if (data.analysisJson) {
-          report.value = data.analysisJson
-        } else {
-          report.value = data
-        }
-      } else {
-        report.value = demoReports[id] || null
-      }
-    } catch (e) {
-      report.value = demoReports[id] || null
-    }
+const route = useRoute()
+const contractStore = useContractStore()
+
+const loading = ref(false)
+const loadError = ref('')
+const currentReport = ref(null)
+
+// Contract date fields and messages
+const contractStartDate = ref('')
+const contractEndDate = ref('')
+const dateSaveSuccess = ref('')
+const dateSaveError = ref('')
+
+const routeId = computed(() => String(route.params.id || ''))
+const isCommonPage = computed(() => String(route.query?.from || '') === 'common')
+
+// Active report: backend data when available, otherwise demo for common contracts
+const report = computed(() => {
+  if (isCommonPage.value) {
+    return reports[routeId.value || '1']
   }
+  return currentReport.value
 })
 
+async function loadReport() {
+  loadError.value = ''
+
+  // For common/demo reports we just use the local dataset
+  if (isCommonPage.value) {
+    currentReport.value = null
+    return
+  }
+
+  const id = routeId.value
+  if (!id) {
+    loadError.value = 'No report id provided.'
+    return
+  }
+
+  // Load any saved contract dates for this report
+  try {
+    const saved = localStorage.getItem(`contract_dates_${id}`)
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      contractStartDate.value = parsed.startDate || ''
+      contractEndDate.value = parsed.endDate || ''
+      if (parsed.endDate) {
+        eventDate.value = parsed.endDate
+      }
+    }
+  } catch (e) {
+    // ignore malformed localStorage
+  }
+
+  // If we already have the report in the store (after upload), reuse it
+  if (contractStore.currentReport && String(contractStore.currentReport.id) === id) {
+    currentReport.value = contractStore.currentReport
+    return
+  }
+
+  loading.value = true
+  try {
+    const data = await getContractById(id)
+    if (!data || !data.report) {
+      loadError.value = 'Report not found.'
+      return
+    }
+
+    const r = data.report
+    currentReport.value = {
+      id: data.id,
+      title: r.title || data.title || 'Contract',
+      contractType: r.contractType || '',
+      date: r.date || data.uploadedAt,
+      riskScore: r.riskScore ?? data.riskScore,
+      risk: r.risk,
+      riskLabel: r.riskLabel,
+      humanSummary: r.humanSummary,
+      keySummary: r.keySummary,
+      keyFindings: r.keyFindings || [],
+      summary: r.summary,
+      focus: r.focus || [],
+      breakdown: r.breakdown || {},
+      actions: r.actions || [],
+      clauses: r.clauses || {},
+    }
+  } catch (e) {
+    loadError.value = e?.message || 'Failed to load report.'
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(loadReport)
+watch([routeId, isCommonPage], loadReport)
+
+// Normalize the active report shape (backend/store/demo) for the template
 const normalizedReport = computed(() => {
   const r = report.value
   if (!r) return null
-  // If r has all expected fields, return as is
+
   if (
     typeof r.riskScore === 'number' &&
     r.breakdown && Object.keys(r.breakdown).length > 0 &&
     Array.isArray(r.actions) && r.actions.length > 0
   ) {
-    // Force risk to be normalized from riskLabel if needed
     let risk = r.risk
     if (!risk && r.riskLabel) {
       const label = r.riskLabel.toLowerCase()
@@ -584,7 +632,7 @@ const normalizedReport = computed(() => {
     }
     return { ...r, risk }
   }
-  // Otherwise, map legacy/summary shape to expected fields
+
   let risk = r.risk
   if (!risk && r.riskLabel) {
     const label = r.riskLabel.toLowerCase()
@@ -593,6 +641,7 @@ const normalizedReport = computed(() => {
     else if (label.includes('low')) risk = 'low'
     else risk = 'medium'
   }
+
   return {
     title: r.title || 'Contract',
     contractType: r.contractType || 'Contract',
@@ -611,8 +660,112 @@ const normalizedReport = computed(() => {
   }
 })
 
+const eventDate = ref('')
+const durationMinutes = ref(60)
+const calendarError = ref('')
+const calendarSuccess = ref('')
+const downloading = ref(false)
+
+// Keep reminder date in sync with contract end date by default
+watch(
+  () => contractEndDate.value,
+  (val) => {
+    if (val) {
+      eventDate.value = val
+    }
+  }
+)
+
+function saveContractDates() {
+  dateSaveSuccess.value = ''
+  dateSaveError.value = ''
+  const id = routeId.value || '1'
+  if (!contractStartDate.value && !contractEndDate.value) {
+    dateSaveError.value = 'Please enter at least one date.'
+    return
+  }
+  const contractData = {
+    contractId: id,
+    title: normalizedReport.value?.title,
+    startDate: contractStartDate.value,
+    endDate: contractEndDate.value,
+    savedAt: new Date().toISOString()
+  }
+  try {
+    localStorage.setItem(`contract_dates_${id}`, JSON.stringify(contractData))
+    const allContracts = JSON.parse(localStorage.getItem('all_contract_dates') || '[]')
+    const existingIndex = allContracts.findIndex(c => c.contractId === id)
+    if (existingIndex >= 0) {
+      allContracts[existingIndex] = contractData
+    } else {
+      allContracts.push(contractData)
+    }
+    localStorage.setItem('all_contract_dates', JSON.stringify(allContracts))
+    dateSaveSuccess.value = 'Contract dates saved successfully!'
+    setTimeout(() => {
+      dateSaveSuccess.value = ''
+    }, 3000)
+  } catch (e) {
+    dateSaveError.value = 'Failed to save dates.'
+  }
+}
+
+// Prepare event payload for calendar links and ICS files
+const eventPayload = computed(() => {
+  if (!eventDate.value) return null
+  const start = new Date(eventDate.value)
+  if (Number.isNaN(start.getTime())) return null
+  const durationMs = Math.max(15, Number(durationMinutes.value) || 60) * 60 * 1000
+  const end = new Date(start.getTime() + durationMs)
+  if (!normalizedReport.value) return null
+  return {
+    title: `${normalizedReport.value.title} review`,
+    description: normalizedReport.value.summary || normalizedReport.value.keySummary,
+    location: '',
+    start: start.toISOString(),
+    end: end.toISOString(),
+  }
+})
+
+const googleLink = computed(() => {
+  if (!eventPayload.value) return ''
+  return buildGoogleCalendarUrl(eventPayload.value)
+})
+
+// Download ICS file on client side
+function downloadClientIcs() {
+  calendarError.value = ''
+  calendarSuccess.value = ''
+  if (!eventPayload.value) {
+    calendarError.value = 'Choose a date and duration first.'
+    return
+  }
+  const ok = downloadIcsClient(eventPayload.value)
+  if (ok) {
+    calendarSuccess.value = 'ICS file downloaded.'
+  }
+}
+// Download ICS file from server
+async function downloadServerIcs() {
+  calendarError.value = ''
+  calendarSuccess.value = ''
+  if (!eventPayload.value) {
+    calendarError.value = 'Choose a date and duration first.'
+    return
+  }
+  try {
+    downloading.value = true
+    await downloadServerIcsApi(eventPayload.value)
+    calendarSuccess.value = 'ICS file downloaded from server.'
+  } catch (err) {
+    calendarError.value = err?.message || 'Download failed'
+  } finally {
+    downloading.value = false
+  }
+}
+
 const riskBadgeClass = computed(() => {
-  if (!normalizedReport.value) return ''
+  if (!normalizedReport.value) return 'badge-low'
   if (normalizedReport.value.risk === 'high') return 'badge-high'
   if (normalizedReport.value.risk === 'medium') return 'badge-medium'
   return 'badge-low'

@@ -71,6 +71,11 @@ export async function getContracts() {
   return http.get(BASE_PATH);
 }
 
+// Fetch a single contract (including its mapped AI report)
+export async function getContractById(id) {
+  return http.get(`${BASE_PATH}/${encodeURIComponent(id)}`)
+}
+
 // Admin common contracts CRUD
 export async function getCommonContracts() {
   return http.get(`${BASE_PATH}/common`);
