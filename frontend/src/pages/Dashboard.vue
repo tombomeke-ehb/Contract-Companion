@@ -279,7 +279,7 @@ function extractMonthYear(dateStr) {
 
 const years = computed(() => {
   const set = new Set()
-  (reports.value || []).forEach(r => {
+  ;(reports.value || []).forEach(r => {
     const { year } = extractMonthYear(r.date)
     if (year) set.add(year)
   })
