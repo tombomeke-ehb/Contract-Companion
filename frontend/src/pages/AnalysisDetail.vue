@@ -200,7 +200,6 @@ onMounted(async () => {
 })
 
 const normalizedReport = computed(() => {
-  // If backend returns a full report, use it. If only summary, map to expected shape.
   const r = report.value
   if (!r) return null
   // If r has all expected fields, return as is
@@ -209,15 +208,32 @@ const normalizedReport = computed(() => {
     r.breakdown && Object.keys(r.breakdown).length > 0 &&
     Array.isArray(r.actions) && r.actions.length > 0
   ) {
-    return r
+    // Force risk to be normalized from riskLabel if needed
+    let risk = r.risk
+    if (!risk && r.riskLabel) {
+      const label = r.riskLabel.toLowerCase()
+      if (label.includes('high')) risk = 'high'
+      else if (label.includes('medium')) risk = 'medium'
+      else if (label.includes('low')) risk = 'low'
+      else risk = 'medium'
+    }
+    return { ...r, risk }
   }
   // Otherwise, map legacy/summary shape to expected fields
+  let risk = r.risk
+  if (!risk && r.riskLabel) {
+    const label = r.riskLabel.toLowerCase()
+    if (label.includes('high')) risk = 'high'
+    else if (label.includes('medium')) risk = 'medium'
+    else if (label.includes('low')) risk = 'low'
+    else risk = 'medium'
+  }
   return {
     title: r.title || 'Contract',
     contractType: r.contractType || 'Contract',
     date: r.date || r.uploadedAt || '',
     riskScore: typeof r.riskScore === 'number' ? r.riskScore : 0,
-    risk: r.risk || 'medium',
+    risk,
     riskLabel: r.riskLabel || 'Medium risk',
     keySummary: r.keySummary || '',
     humanSummary: r.humanSummary || r.description || '',
