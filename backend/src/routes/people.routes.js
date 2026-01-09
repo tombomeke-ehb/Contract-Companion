@@ -1,7 +1,7 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import { authenticate, isAdmin } from "../middleware/auth.js";
-import { listPeople, createPerson, deletePerson } from "../services/user.service.js";
+import { listPeople, createPerson, deletePerson, deleteUserContracts } from "../services/user.service.js";
 
 const router = express.Router();
 
@@ -72,7 +72,7 @@ router.put("/:id", async (req, res) => {
   res.json({ message: "Update person (admin only)" });
 });
 
-// DELETE /api/people/:id - delete an user
+// DELETE /api/people/:id - delete an user (and all their contracts)
 router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -87,6 +87,20 @@ router.delete("/:id", async (req, res) => {
   } catch (error) {
     console.error("Error deleting person:", error);
     res.status(500).json({ error: "Failed to delete person" });
+  }
+});
+
+// DELETE /api/people/:id/data - delete all contract data for a user (keep the user)
+router.delete("/:id/data", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await deleteUserContracts(id);
+
+    res.json({ message: "User data deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting user data:", error);
+    res.status(500).json({ error: "Failed to delete user data" });
   }
 });
 

@@ -42,9 +42,14 @@
 
           </div>
           <div class="report-list__meta">
-            <span class="badge" :class="badgeClass(person.risk)">
+            <button
+              type="button"
+              class="btn btn-outline"
+              @click="deletePersonData(person.id)"
+              style="margin-right:0.5rem; background-color:#fef3c7; color:#92400e; border-color:#f59e0b;"
+            >
               Delete data
-            </span>
+            </button>
             <span class="card-subtitle" style="margin-left:0.5rem;">{{ person.date }}</span>
             <button
               @click="deletePerson(person.id)"
@@ -92,7 +97,7 @@
 <script setup>
 import { ref, computed, reactive, onMounted } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
-import { deletePerson as deletePersonAPI, createPerson as createPersonAPI, getPeople as getPeopleAPI } from '../api/people'
+import { deletePerson as deletePersonAPI, deletePersonData as deletePersonDataAPI, createPerson as createPersonAPI, getPeople as getPeopleAPI } from '../api/people'
 
 const people = ref([])
 const sortFilter = ref('all')
@@ -172,6 +177,16 @@ const addPerson = async () => {
     errorMessage.value = err?.message || 'Toevoegen mislukt. Controleer de invoer en probeer opnieuw.'
   } finally {
     submitting.value = false
+  }
+}
+// Delete only contract data for a person
+const deletePersonData = async (personId) => {
+  try {
+    await deletePersonDataAPI(personId)
+    alert('All contract data for this user has been deleted.')
+  } catch (error) {
+    console.error('Failed to delete user data:', error)
+    alert('Error deleting data. Please try again.')
   }
 }
 // Delete person
