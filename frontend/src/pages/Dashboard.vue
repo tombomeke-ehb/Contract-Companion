@@ -101,7 +101,7 @@ import { RouterLink, useRouter } from 'vue-router'
 import { useUserStore } from '../stores/userStore'
 import { getContracts as fetchContracts, deleteContract } from '../api/contracts'
 
-const reports = ref([
+const demoReports = [
   {
     id: 1,
     title: 'Employment Agreement  Tech Corp',
@@ -126,21 +126,36 @@ const reports = ref([
     riskLabel: 'Medium risk',
     date: '08 Jan 2025'
   }
-])
+]
+
+const reports = ref([])
 
 onMounted(async () => {
   try {
     const backendContracts = await fetchContracts()
-    const mapped = backendContracts.map((c) => ({
-      ...c,
-      date: typeof c.date === 'string' ? c.date : new Date(c.date).toLocaleDateString('en-GB', {
-        day: '2-digit', month: 'short', year: 'numeric'
-      })
-    }))
-
-    reports.value = [...reports.value, ...mapped]
+    const mapped = backendContracts.map((c) => {
+      // Normalize risk from riskLabel if needed
+      let risk = c.risk
+      if (!risk && c.riskLabel) {
+        const label = c.riskLabel.toLowerCase()
+        if (label.includes('high')) risk = 'high'
+        else if (label.includes('medium')) risk = 'medium'
+        else if (label.includes('low')) risk = 'low'
+        else risk = 'medium'
+      }
+      return {
+        ...c,
+        risk,
+        date: typeof c.date === 'string' ? c.date : new Date(c.date).toLocaleDateString('en-GB', {
+          day: '2-digit', month: 'short', year: 'numeric'
+        })
+      }
+    })
+    // Fallback: toon demoReports alleen als er geen echte contracten zijn
+    reports.value = mapped.length > 0 ? mapped : demoReports
   } catch (e) {
-    console.error('Failed to load contracts for dashboard', e)
+    // Fallback: als backend faalt, toon demoReports
+    reports.value = demoReports
   }
 })
 
