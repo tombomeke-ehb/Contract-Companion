@@ -38,7 +38,7 @@ const messages = {
       notifications: 'Notifications'
     },
 
-     dashboard: {
+    dashboard: {
       welcomeBack: 'Welcome back',
       subtitle: 'Here’s what’s happening with your contracts.',
       uploadNewContract: 'Upload New Contract',
@@ -51,6 +51,7 @@ const messages = {
       filterRiskHigh: 'High risk',
       filterRiskMedium: 'Medium risk',
       filterRiskLow: 'Low risk',
+      filterYearAll: 'All years',
       filterMonthAll: 'All months',
 
       recentAnalyses: 'Recent Contract Analyses',
@@ -165,6 +166,7 @@ const messages = {
       filterRiskHigh: 'Hoog risico',
       filterRiskMedium: 'Gemiddeld risico',
       filterRiskLow: 'Laag risico',
+      filterYearAll: 'Alle jaren',
       filterMonthAll: 'Alle maanden',
 
       recentAnalyses: 'Recente contractanalyses',

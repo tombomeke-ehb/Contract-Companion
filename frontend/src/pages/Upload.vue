@@ -36,6 +36,15 @@
           <p class="upload-zone__hint">
             {{ fileName || $t('upload.fileHint') }}
           </p>
+          <p v-if="fileName" class="upload-zone__hint">
+            <button
+              type="button"
+              @click.stop="clearFile"
+              style="background:none;border:none;padding:0;color:var(--danger);text-decoration:underline;cursor:pointer;font:inherit;"
+            >
+              Remove selected file
+            </button>
+          </p>
         </div>
         <button class="btn btn-outline" type="button" @click.stop="triggerFileInput">
           {{ $t('upload.browseFiles') }}
@@ -235,15 +244,19 @@ const handleDragLeave = (event) => {
   isDragging.value = false
 }
 
-const resetForm = () => {
+const clearFile = () => {
   selectedFile.value = null
-  form.contractType = ''
-  form.notes = ''
-  status.value = ''
-  error.value = ''
   if (fileInput.value) {
     fileInput.value.value = ''
   }
+  status.value = ''
+  error.value = ''
+}
+
+const resetForm = () => {
+  clearFile()
+  form.contractType = ''
+  form.notes = ''
 }
 
 // Accessibility: loader overlay is shown when isUploading is true
@@ -282,8 +295,24 @@ const handleSubmit = async () => {
       router.push({ name: 'dashboard' })
     }
   } catch (err) {
+    console.warn(err)
+
+    // If the backend explicitly rejects the file type, show
+    // a clear validation message instead of the demo fallback.
+    const message = err?.message || ''
+    if (
+      err?.status === 400 &&
+      message.toLowerCase().includes('only pdf')
+    ) {
+      error.value = 'We only accept PDF, DOC, DOCX or TXT files.'
+      status.value = ''
+      isUploading.value = false
+      return
+    }
+
+    status.value =
+      'Cannot reach the backend right now, so we will show a demo report instead.'
     error.value = 'Upload or analysis failed. Please try again.'
-    status.value = ''
   } finally {
     isUploading.value = false
   }
