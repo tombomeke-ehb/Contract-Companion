@@ -101,7 +101,6 @@ ${llm1Result.normalizedText}
 
   // Gemini API call
   const resultText = await runGeminiLegal({ prompt });
-  console.log("[ai-orchestrator] Gemini antwoord:", resultText);
   let llm2Result;
   try {
     const start = resultText.indexOf("{");
