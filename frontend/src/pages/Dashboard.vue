@@ -134,9 +134,10 @@ import { RouterLink, useRouter } from 'vue-router'
 import { useUserStore } from '../stores/userStore'
 import { getContracts as fetchContracts, deleteContract } from '../api/contracts'
 
+// Demo data: gebruik string-id's om botsing met echte contracten te voorkomen
 const demoReports = [
   {
-    id: 1,
+    id: 'demo-1',
     title: 'Employment Agreement  Tech Corp',
     subtitle: 'Uploaded by John Doe  Employment contract',
     risk: 'high',
@@ -144,7 +145,7 @@ const demoReports = [
     date: '15 Jan 2025'
   },
   {
-    id: 2,
+    id: 'demo-2',
     title: 'NDA  Startup Inc',
     subtitle: 'Uploaded by Sarah Lee  NDA',
     risk: 'medium',
@@ -152,7 +153,7 @@ const demoReports = [
     date: '12 Jan 2025'
   },
   {
-    id: 3,
+    id: 'demo-3',
     title: 'Lease Agreement  Office Space',
     subtitle: 'Uploaded by Tom Jacobs  Housing',
     risk: 'medium',
@@ -160,7 +161,7 @@ const demoReports = [
     date: '08 Jan 2025'
   },
   {
-    id: 4,
+    id: 'demo-4',
     title: 'Service Agreement  Marketing Support',
     subtitle: 'Uploaded by Emma Verhoeven  Service agreement',
     risk: 'low',
@@ -168,7 +169,7 @@ const demoReports = [
     date: '03 Mar 2024'
   },
   {
-    id: 5,
+    id: 'demo-5',
     title: 'Consulting Agreement  Data Strategy',
     subtitle: 'Uploaded by Liam Peeters  Consulting',
     risk: 'high',
@@ -176,7 +177,7 @@ const demoReports = [
     date: '21 Nov 2024'
   },
   {
-    id: 6,
+    id: 'demo-6',
     title: 'NDA  Global Pharma',
     subtitle: 'Uploaded by Anna Janssens  NDA',
     risk: 'low',
@@ -184,7 +185,7 @@ const demoReports = [
     date: '09 Feb 2023'
   },
   {
-    id: 7,
+    id: 'demo-7',
     title: 'Partnership Agreement  FinTech Alliance',
     subtitle: 'Uploaded by Noah Willems  Partnership',
     risk: 'medium',
@@ -192,7 +193,7 @@ const demoReports = [
     date: '27 Aug 2023'
   },
   {
-    id: 8,
+    id: 'demo-8',
     title: 'Lease Agreement  Warehouse',
     subtitle: 'Uploaded by Julie Dubois  Real estate',
     risk: 'high',
@@ -200,7 +201,7 @@ const demoReports = [
     date: '11 Dec 2022'
   },
   {
-    id: 9,
+    id: 'demo-9',
     title: 'Employment Agreement  Sales Team',
     subtitle: 'Uploaded by Mark De Smet  Employment',
     risk: 'low',

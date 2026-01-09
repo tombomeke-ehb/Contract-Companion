@@ -178,8 +178,33 @@ const calendarError = ref('')
 const calendarSuccess = ref('')
 const downloading = ref(false)
 
-// Load saved contract dates on mount
-const contractId = route.params.id || '1'
+// Voeg googleLink computed toe zodat Add to Google Calendar werkt
+const googleLink = computed(() => {
+  if (!eventPayload.value) return ''
+  const start = eventPayload.value.start
+  const end = eventPayload.value.end
+  const title = encodeURIComponent(report.value?.title || 'Contract Reminder')
+  const details = encodeURIComponent('Contract deadline or reminder set via Contract Companion.')
+  const location = ''
+  // Google Calendar expects: YYYYMMDDTHHmmssZ
+  function toGoogleDate(dt) {
+    if (!dt) return ''
+    const pad = (n) => String(n).padStart(2, '0')
+    return (
+      dt.getUTCFullYear() +
+      pad(dt.getUTCMonth() + 1) +
+      pad(dt.getUTCDate()) + 'T' +
+      pad(dt.getUTCHours()) +
+      pad(dt.getUTCMinutes()) +
+      pad(dt.getUTCSeconds()) + 'Z'
+    )
+  }
+  const dates = `${toGoogleDate(start)}/${toGoogleDate(end)}`
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&location=${location}`
+})
+
+// Load saved contract dates on mount (ook voor echte contracten)
+const contractId = route.params.id?.toString() || '1'
 const savedDates = localStorage.getItem(`contract_dates_${contractId}`)
 if (savedDates) {
   const parsed = JSON.parse(savedDates)
@@ -187,6 +212,13 @@ if (savedDates) {
   contractEndDate.value = parsed.endDate || ''
   if (parsed.endDate) {
     eventDate.value = parsed.endDate
+  }
+} else if (report.value && report.value.date) {
+  // Probeer backend endDate te gebruiken als fallback
+  contractStartDate.value = report.value.date || ''
+  if (report.value.endDate) {
+    contractEndDate.value = report.value.endDate
+    eventDate.value = report.value.endDate
   }
 }
 
@@ -562,36 +594,57 @@ onMounted(async () => {
       report.value = demoReports[id] || null
     }
   }
+
+  // Automatisch start/einddatum invullen als ze in de tekst gevonden worden
+  if (report.value && report.value.text) {
+    // Zoek naar datums in de tekst (formaat: dd-mm-yyyy, dd/mm/yyyy, yyyy-mm-dd, yyyy/mm/dd)
+    const dateRegex = /(\d{2}[\/-]\d{2}[\/-]\d{4}|\d{4}[\/-]\d{2}[\/-]\d{2})/g
+    const matches = report.value.text.match(dateRegex)
+    if (matches && matches.length > 0) {
+      // Kies eerste als start, tweede als eind (indien aanwezig)
+      contractStartDate.value = matches[0] ? formatDateForInput(matches[0]) : ''
+      contractEndDate.value = matches[1] ? formatDateForInput(matches[1]) : ''
+      if (contractEndDate.value) eventDate.value = contractEndDate.value
+    }
+  }
 })
+
+function formatDateForInput(dateStr) {
+  // Zet gevonden datum om naar yyyy-MM-ddTHH:mm voor input[type=datetime-local]
+  // Probeer verschillende formaten
+  let d
+  if (/\d{2}[\/-]\d{2}[\/-]\d{4}/.test(dateStr)) {
+    // dd-mm-yyyy of dd/mm/yyyy
+    const [day, month, year] = dateStr.split(/[\/-]/)
+    d = new Date(`${year}-${month}-${day}T08:00`)
+  } else if (/\d{4}[\/-]\d{2}[\/-]\d{2}/.test(dateStr)) {
+    // yyyy-mm-dd of yyyy/mm/dd
+    const [year, month, day] = dateStr.split(/[\/-]/)
+    d = new Date(`${year}-${month}-${day}T08:00`)
+  }
+  if (!d || isNaN(d.getTime())) return ''
+  // Format naar yyyy-MM-ddTHH:mm
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
 
 const normalizedReport = computed(() => {
   const r = report.value
   if (!r) return null
-  // If r has all expected fields, return as is
-  if (
-    typeof r.riskScore === 'number' &&
-    r.breakdown && Object.keys(r.breakdown).length > 0 &&
-    Array.isArray(r.actions) && r.actions.length > 0
-  ) {
-    // Force risk to be normalized from riskLabel if needed
-    let risk = r.risk
-    if (!risk && r.riskLabel) {
-      const label = r.riskLabel.toLowerCase()
-      if (label.includes('high')) risk = 'high'
-      else if (label.includes('medium')) risk = 'medium'
-      else if (label.includes('low')) risk = 'low'
-      else risk = 'medium'
-    }
-    return { ...r, risk }
-  }
-  // Otherwise, map legacy/summary shape to expected fields
+  // Bepaal risk/riskLabel altijd op basis van riskScore, net als op het dashboard
   let risk = r.risk
-  if (!risk && r.riskLabel) {
-    const label = r.riskLabel.toLowerCase()
-    if (label.includes('high')) risk = 'high'
-    else if (label.includes('medium')) risk = 'medium'
-    else if (label.includes('low')) risk = 'low'
-    else risk = 'medium'
+  let riskLabel = r.riskLabel
+  if (typeof r.riskScore === 'number') {
+    if (r.riskScore >= 7) {
+      risk = 'high'
+      riskLabel = 'High risk'
+    } else if (r.riskScore <= 3) {
+      risk = 'low'
+      riskLabel = 'Low risk'
+    } else {
+      risk = 'medium'
+      riskLabel = 'Medium risk'
+    }
   }
   return {
     title: r.title || 'Contract',
@@ -599,7 +652,7 @@ const normalizedReport = computed(() => {
     date: r.date || r.uploadedAt || '',
     riskScore: typeof r.riskScore === 'number' ? r.riskScore : 0,
     risk,
-    riskLabel: r.riskLabel || 'Medium risk',
+    riskLabel,
     keySummary: r.keySummary || '',
     humanSummary: r.humanSummary || r.description || '',
     keyFindings: r.keyFindings || [],
