@@ -22,6 +22,11 @@ export async function deletePerson(personId) {
   return await http.del(`${BASE_PATH}/${personId}`)
 }
 
+// Delete only the contract data for a person (keep the account)
+export async function deletePersonData(personId) {
+  return await http.del(`${BASE_PATH}/${personId}/data`)
+}
+
 /**
  * Get all people from the database.
  *
