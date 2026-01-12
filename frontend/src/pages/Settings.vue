@@ -34,20 +34,24 @@
               <option value="high-contrast">High contrast</option>
             </select>
           </div>
+          <div class="form-group">
+            <label class="label" for="expiryReminderDays">Aantal dagen op voorhand voor contractverval-notificatie</label>
+            <input
+              id="expiryReminderDays"
+              type="number"
+              min="1"
+              max="60"
+              v-model.number="form.expiryReminderDays"
+              class="input"
+              style="max-width: 120px;"
+            />
+          </div>
         </form>
       </article>
 
       <article class="card">
         <h2 class="card-title">{{ $t('settings.security') }}</h2>
         <form class="form">
-          <div class="form-group">
-            <label class="label" for="twofactor">{{ $t('settings.twoFactor') }}</label>
-            <select id="twofactor" v-model="form.twoFactor" class="select">
-              <option value="Email">{{ $t('settings.twoFactorEmail') }}</option>
-              <option value="Authenticator">{{ $t('settings.twoFactorApp') }}</option>
-              <option value="Disabled">{{ $t('settings.twoFactorDisabled') }}</option>
-            </select>
-          </div>
           <div class="form-group">
             <label class="label">{{ $t('settings.sessionTimeout') }}</label>
             <select v-model="form.sessionTimeout" class="select">
@@ -108,15 +112,14 @@ const userId = computed(() => userStore.user?.id)
 const STORAGE_KEYS = {
   theme: 'cc_theme_v2', // new multi-theme key
   language: 'cc_language',
-  twoFactor: 'cc_twoFactor',
   sessionTimeout: 'cc_sessionTimeout'
 }
 
 const defaultForm = {
   language: 'English',
   theme: 'light',
-  twoFactor: 'Email',
-  sessionTimeout: '30'
+  sessionTimeout: '30',
+  expiryReminderDays: 7
 }
 
 const form = reactive({ ...defaultForm })
@@ -178,7 +181,6 @@ function loadFromStorage() {
     // keep Settings storage keys for backwards compatibility
     const storedTheme = localStorage.getItem(STORAGE_KEYS.theme)
     const storedLangCode = localStorage.getItem(STORAGE_KEYS.language)
-    const storedTwoFactor = localStorage.getItem(STORAGE_KEYS.twoFactor)
     const storedSession = localStorage.getItem(STORAGE_KEYS.sessionTimeout)
 
     if (storedTheme && THEME_CLASS_MAP[storedTheme]) {
@@ -186,9 +188,6 @@ function loadFromStorage() {
     }
     if (storedLangCode === 'en' || storedLangCode === 'nl') {
       form.language = mapCodeToUi(storedLangCode)
-    }
-    if (storedTwoFactor) {
-      form.twoFactor = storedTwoFactor
     }
     if (storedSession) {
       form.sessionTimeout = storedSession
@@ -203,7 +202,6 @@ function saveToStorage() {
     // keep Settings storage keys for backwards compatibility
     localStorage.setItem(STORAGE_KEYS.theme, form.theme)
     localStorage.setItem(STORAGE_KEYS.language, mapUiToCode(form.language))
-    localStorage.setItem(STORAGE_KEYS.twoFactor, form.twoFactor)
     localStorage.setItem(STORAGE_KEYS.sessionTimeout, form.sessionTimeout)
 
     // also save theme via shared helper (used by app startup)
@@ -268,6 +266,9 @@ onMounted(async () => {
     if (data.SESSION_TIMEOUT) {
       form.sessionTimeout = String(data.SESSION_TIMEOUT)
     }
+    if (data.EXPIRY_REMINDER_DAYS !== undefined && data.EXPIRY_REMINDER_DAYS !== null) {
+      form.expiryReminderDays = Number(data.EXPIRY_REMINDER_DAYS)
+    }
 
     // Directly update userStore preferences if available
     if (userStore && userStore.preferences) {
@@ -275,6 +276,7 @@ onMounted(async () => {
       userStore.preferences.lang = data.LANG || 'nl'
       userStore.preferences.region = data.REGION ?? null
       userStore.preferences.sessionTimeout = data.SESSION_TIMEOUT ?? 30
+      userStore.preferences.expiryReminderDays = data.EXPIRY_REMINDER_DAYS ?? 7
     }
 
     applyTheme(form.theme)
@@ -306,8 +308,9 @@ const saveSettings = async () => {
 
   const payload = {
     theme: form.theme,
-    language: mapUiToCode(form.language),
-    sessionTimeout: Number(form.sessionTimeout)
+    lang: mapUiToCode(form.language),
+    sessionTimeout: Number(form.sessionTimeout),
+    expiryReminderDays: Number(form.expiryReminderDays)
   }
   console.debug('[Settings] saveSettings payload', payload)
 
