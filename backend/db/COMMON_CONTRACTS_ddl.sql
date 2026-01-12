@@ -50,3 +50,5 @@ INSERT INTO COMMON_CONTRACTS (CONTRACT_KEY, NAME, CATEGORY, SUMMARY, RISK_HIGH, 
 VALUES ('lease', 'Apartment lease', 'Housing', 'Standard Flemish rental agreement with yearly indexation.', 0, 3, 6, 'Nov 2024', 1);
 
 COMMIT;
+
+ALTER TABLE DOCUMENTEN ADD (STATUS VARCHAR2(20));
