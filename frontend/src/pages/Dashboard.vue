@@ -88,35 +88,46 @@
           :key="report.id"
           class="report-list__item"
           style="align-items:center;"
-          @click="goToReport(report.id)"
+          @click="report.status === 'done' ? goToReport(report.id) : null"
           tabindex="0"
-          @keydown.enter="goToReport(report.id)"
-          @keydown.space="goToReport(report.id)"
+          @keydown.enter="report.status === 'done' ? goToReport(report.id) : null"
+          @keydown.space="report.status === 'done' ? goToReport(report.id) : null"
         >
           <div style="min-width:220px;">
-            <h3 style="margin-bottom:0.25rem;">{{ report.title }}</h3>
+            <h3 style="margin-bottom:0.25rem;">
+              {{ report.generatedTitle || report.title || report.fileName }}
+              <span v-if="report.status === 'pending'" class="pending-label">(Analyse bezig...)</span>
+              <span v-if="report.status === 'done'" :class="['badge', badgeClass(report.risk)]" style="margin-left:0.5em;">{{ report.riskLabel }}</span>
+              <span v-if="report.status === 'done' && typeof report.riskScore === 'number'" class="risk-score-badge" style="margin-left:0.5em; font-size:0.95em; color:#888;">Score: {{ report.riskScore }}</span>
+            </h3>
+            <p class="card-subtitle"
+               v-if="report.fileName && (report.generatedTitle || report.title) && report.fileName !== (report.generatedTitle || report.title)">
+              <span style="color:#888; font-size:0.95em;">{{ report.fileName }}</span>
+            </p>
             <p class="card-subtitle">{{ report.subtitle }}</p>
             <p class="card-subtitle" v-if="hasDates(report.id)">
               {{ formatDate(contractDates[report.id]?.startDate) }}
               <span aria-hidden="true">→</span>
               {{ formatDate(contractDates[report.id]?.endDate) }}
             </p>
+            <p class="card-subtitle" v-else-if="report.date">
+              {{ formatDate(report.date) }}
+            </p>
             <p class="card-subtitle" v-else>Dates not set</p>
           </div>
           <div class="report-list__meta">
-            <span class="badge" :class="badgeClass(report.risk)">
-              {{ report.riskLabel }}
-            </span>
-            <span class="card-subtitle" style="margin-left:0.5rem;">{{ report.date }}</span>
             <RouterLink
-              class="btn btn-outline"
+              v-if="report.status === 'done'"
+              class="btn btn-outline view-btn"
               :to="{ name: 'report-detail', params: { id: report.id } }"
               style="margin-left:0.5rem;"
             >
               {{ $t('dashboard.view') }}
             </RouterLink>
-            <button class="btn btn-danger" style="margin-left:0.5rem;" @click.stop="handleDelete(report.id)">
-              {{ $t('dashboard.delete') || 'Delete' }}
+            <span v-else class="btn btn-outline view-btn disabled" style="margin-left:0.5rem; opacity:0.6; cursor:not-allowed;">Analyse bezig...</span>
+            <button class="btn btn-danger delete-btn" style="margin-left:0.5rem; padding-left:1.2em; padding-right:1.2em;" @click.stop="handleDelete(report.id)">
+              <span class="icon-trash" aria-hidden="true"></span>
+              <span>Verwijder</span>
             </button>
           </div>
         </li>
@@ -125,14 +136,33 @@
         {{ $t('dashboard.noReports') }}
       </p>
     </section>
+    <ConfirmModal
+      v-if="showDeleteModal"
+      :title="$t('dashboard.confirmDeleteTitle')"
+      :message="$t('dashboard.confirmDeleteMessage')"
+      @confirm="confirmDelete"
+      @cancel="cancelDelete"
+    />
+    <ConfirmModal
+      :visible="showDeleteModal"
+      title="Contract verwijderen"
+      message="Weet je zeker dat je dit contract permanent wilt verwijderen? Dit kan niet ongedaan worden gemaakt."
+      confirmText="Verwijderen"
+      cancelText="Annuleren"
+      @confirm="confirmDelete"
+      @cancel="cancelDelete"
+    />
   </section>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useUserStore } from '../stores/userStore'
 import { getContracts as fetchContracts, deleteContract } from '../api/contracts'
+import { useNotificationStore } from '../stores/notificationStore'
+import { pollNotifications } from '../utils/notificationPoller'
+import ConfirmModal from '../components/ConfirmModal.vue'
 
 // Demo data: gebruik string-id's om botsing met echte contracten te voorkomen
 const demoReports = [
@@ -212,34 +242,60 @@ const demoReports = [
 
 const reports = ref([])
 
-onMounted(async () => {
+const notificationStore = useNotificationStore()
+const userStore = useUserStore()
+
+let eventSource = null;
+
+// Helper to refresh contracts (must be async for SSE)
+async function refreshContracts() {
   try {
-    const backendContracts = await fetchContracts()
+    const backendContracts = await fetchContracts();
     const mapped = backendContracts.map((c) => {
-      // Normalize risk from riskLabel if needed
-      let risk = c.risk
+      let risk = c.risk;
       if (!risk && c.riskLabel) {
-        const label = c.riskLabel.toLowerCase()
-        if (label.includes('high')) risk = 'high'
-        else if (label.includes('medium')) risk = 'medium'
-        else if (label.includes('low')) risk = 'low'
-        else risk = 'medium'
+        const label = c.riskLabel.toLowerCase();
+        if (label.includes('high')) risk = 'high';
+        else if (label.includes('medium')) risk = 'medium';
+        else if (label.includes('low')) risk = 'low';
+        else risk = 'medium';
       }
       return {
         ...c,
         risk,
+        generatedTitle: c.aiTitle || c.title || c.fileName,
         date: typeof c.date === 'string' ? c.date : new Date(c.date).toLocaleDateString('en-GB', {
           day: '2-digit', month: 'short', year: 'numeric'
-        })
-      }
-    })
-    // Fallback: toon demoReports alleen als er geen echte contracten zijn
-    reports.value = mapped.length > 0 ? mapped : demoReports
+        }),
+        status: c.status || 'pending' // default to pending if not set
+      };
+    });
+    reports.value = mapped.length > 0 ? mapped : demoReports;
   } catch (e) {
-    // Fallback: als backend faalt, toon demoReports
-    reports.value = demoReports
+    reports.value = demoReports;
   }
-})
+}
+
+onMounted(() => {
+  eventSource = new EventSource(import.meta.env.VITE_API_URL + '/api/contracts/events');
+  eventSource.addEventListener('ping', (event) => {
+    // geen logging
+  });
+  eventSource.addEventListener('contractAnalyzed', (event) => {
+    refreshContracts();
+  });
+
+  notificationStore.clear();
+  setInterval(pollNotifications, 30000);
+  refreshContracts();
+});
+
+onUnmounted(() => {
+  if (eventSource) {
+    eventSource.close();
+    eventSource = null;
+  }
+});
 
 const riskFilter = ref('all')
 const yearFilter = ref('all')
@@ -305,7 +361,6 @@ const now = new Date()
 const currentYear = String(now.getFullYear())
 const currentMonthName = months[now.getMonth()]
 
-const userStore = useUserStore()
 const displayName = computed(() => userStore.user?.name || userStore.user?.email || '')
 
 const filteredReports = computed(() => {
@@ -397,13 +452,48 @@ function goToReport(id) {
   router.push({ name: 'report-detail', params: { id } })
 }
 
+const showDeleteModal = ref(false)
+const deleteTargetId = ref(null)
+
 function handleDelete(reportId) {
-  if (confirm('Are you sure you want to delete this contract?')) {
-    deleteContract(reportId)
-      .then(() => {
-        reports.value = reports.value.filter(r => r.id !== reportId)
+  deleteTargetId.value = reportId
+  showDeleteModal.value = true
+}
+
+function confirmDelete() {
+  deleteContract(deleteTargetId.value)
+    .then(() => {
+      reports.value = reports.value.filter(r => r.id !== deleteTargetId.value)
+      showDeleteModal.value = false
+      deleteTargetId.value = null
+    })
+    .catch(() => {
+      showDeleteModal.value = false
+      deleteTargetId.value = null
+      notificationStore.push({
+        title: 'Verwijderen mislukt',
+        message: 'Het contract kon niet worden verwijderd.',
+        variant: 'danger',
+        timeout: 6000
       })
-      .catch(() => alert('Failed to delete contract.'))
-  }
+    })
+}
+
+function cancelDelete() {
+  showDeleteModal.value = false
+  deleteTargetId.value = null
 }
 </script>
+
+<style scoped>
+.pending-label {
+  font-size: 0.95em;
+  color: #f59e42;
+  margin-left: 0.5em;
+  font-weight: 500;
+}
+.view-btn.disabled {
+  pointer-events: none;
+  opacity: 0.6;
+}
+</style>
