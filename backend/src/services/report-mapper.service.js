@@ -52,8 +52,25 @@ export function mapLlm2ToReport(llm2, id = null) {
     }
   }
 
-  // Risk label: neem expliciet Gemini's overallRiskLabel, anders overallRisk, anders undefined
-  let riskLabel = llm2.overallRiskLabel || llm2.riskLabel || llm2.overallRisk || undefined;
+  // Risk label: always compute from score if possible, fallback to Gemini's label
+  let riskLabel;
+  if (typeof riskScore === 'number') {
+    if (riskScore >= 7) riskLabel = 'High risk';
+    else if (riskScore <= 3) riskLabel = 'Low risk';
+    else riskLabel = 'Medium risk';
+  } else {
+    riskLabel = llm2.overallRiskLabel || llm2.riskLabel || llm2.overallRisk || undefined;
+  }
+
+  // Risk: always compute from score if possible, fallback to Gemini's risk
+  let risk;
+  if (typeof riskScore === 'number') {
+    if (riskScore >= 7) risk = 'high';
+    else if (riskScore <= 3) risk = 'low';
+    else risk = 'medium';
+  } else {
+    risk = llm2.overallRisk || llm2.risk || undefined;
+  }
 
   return {
     id,
@@ -61,7 +78,7 @@ export function mapLlm2ToReport(llm2, id = null) {
     contractType: llm2.contractType,
     date: llm2.analyzedAt || new Date().toISOString(),
     riskScore,
-    risk: llm2.overallRisk,
+    risk,
     riskLabel,
     humanSummary: llm2.humanSummary,
     keySummary: Array.isArray(llm2.keySummary) ? llm2.keySummary.join(' ') : llm2.keySummary,
