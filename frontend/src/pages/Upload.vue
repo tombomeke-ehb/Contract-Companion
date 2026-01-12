@@ -141,11 +141,13 @@
 <script setup>
 import { reactive, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { uploadContract } from '../api/contracts'
+import { uploadContractAsync } from '../api/contracts'
 import { useContractStore } from '../stores/contractStore'
+import { useNotificationStore } from '../stores/notificationStore'
 
 const router = useRouter()
 const contractStore = useContractStore()
+const notificationStore = useNotificationStore()
 const fileInput = ref(null)
 const selectedFile = ref(null)
 const isDragging = ref(false)
@@ -159,7 +161,9 @@ const form = reactive({
   notes: ''
 })
 
-const contractTypes = ['Employment', 'Freelance', 'NDA', 'Lease', 'Subscription']
+const contractTypes = [
+  'Employment', 'Freelance', 'NDA', 'Lease', 'Subscription', "I'm not sure (let AI choose)"
+]
 
 const steps = [
   {
@@ -266,39 +270,34 @@ const handleSubmit = async () => {
     return
   }
 
-  if (!form.contractType) {
+  if (!form.contractType && form.contractType !== "I'm not sure (let AI choose)") {
     error.value = 'Choose a contract type so we can tune the analysis.'
     return
   }
 
   error.value = ''
   isUploading.value = true
-  status.value = 'Uploading and analysing your contract...'
+  status.value = 'Uploading contract...'
+
+  let contractTypeToSend = form.contractType
+  if (contractTypeToSend === "I'm not sure (let AI choose)") {
+    contractTypeToSend = ''
+  }
 
   try {
-    const result = await uploadContract(selectedFile.value, form.contractType, form.notes)
-    status.value = 'Upload successful. Generating your AI report...'
-
-    if (result && result.report) {
-      contractStore.setCurrentReport({
-        id: result.docId,
-        ...result.report,
-      })
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 600))
-
-    if (result && result.docId) {
-      router.push({ name: 'report-detail', params: { id: result.docId } })
-    } else {
-      // Fallback: go to dashboard if no docId is returned
-      router.push({ name: 'dashboard' })
-    }
+    // Gebruik de async upload
+    await uploadContractAsync(selectedFile.value, contractTypeToSend, form.notes)
+    status.value = 'Upload succesvol. Je ontvangt een notificatie zodra de analyse klaar is.'
+    notificationStore.push({
+      title: 'Contract geüpload',
+      message: 'Je contract wordt nu geanalyseerd. Je krijgt een notificatie zodra het rapport klaar is.',
+      variant: 'info',
+      timeout: 6000
+    })
+    await new Promise((resolve) => setTimeout(resolve, 1200))
+    router.push({ name: 'dashboard' })
   } catch (err) {
     console.warn(err)
-
-    // If the backend explicitly rejects the file type, show
-    // a clear validation message instead of the demo fallback.
     const message = err?.message || ''
     if (
       err?.status === 400 &&
@@ -309,7 +308,6 @@ const handleSubmit = async () => {
       isUploading.value = false
       return
     }
-
     status.value =
       'Cannot reach the backend right now, so we will show a demo report instead.'
     error.value = 'Upload or analysis failed. Please try again.'
