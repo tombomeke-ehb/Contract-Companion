@@ -1,146 +1,191 @@
-# Contract Companion
+# Contract Companion 📄
 
-Contract Companion helpt gebruikers om complexe contracten automatisch te analyseren, te begrijpen en op te volgen. Het richt zich op zowel mensen die een contract voor ondertekening willen controleren als op gebruikers die lopende contracten willen beheren.
+> Een AI-gedreven platform voor het begrijpen, analyseren en beheren van contracten zonder juridische kennis
 
-Wat het uniek maakt, is de combinatie van AI-analyse, risicodetectie, automatische herinneringen en een geïntegreerde bibliotheek met veelvoorkomende standaardcontracten (zoals telecom- en energiecontracten) die vooraf al geanalyseerd zijn. Hierdoor krijgen gebruikers onmiddellijk inzicht in zowel persoonlijke als standaardcontracten, zonder juridische kennis nodig te hebben.
+Contract Companion helpt gebruikers om complexe contracten automatisch te analyseren, te begrijpen en op te volgen. De combinatie van AI-analyse, risicodetectie, automatische herinneringen en een standaardcontracten-bibliotheek maakt het uniek.
 
----
-
-## Team
-
-- Product Owner: Tom Dekoning
-- Dev/Database: Lars Biczysko
-- Design/Dev: Ahmed Takadoumi
-- Dev: Waïl Zemouri
-- Dev: Fariss Boughaba
+**🔗 Quick Links:** [Figma Prototype](https://www.figma.com/design/VHRMdl77RiM7ZNSNLk8qwU/IT-project) | [Demo Video](https://youtu.be/lY44BLT9CS8) | [Trello Board](https://trello.com/invite/b/690c916e46c2d56e8293ef94/ATTI6bd7bded80f526987d803b12d400b904662B1CCA/it-project)
 
 ---
 
-## Probleemstelling
+## 👥 Team
 
-Veel mensen ondertekenen contracten zonder de inhoud volledig te begrijpen. Belangrijke clausules zoals automatische verlengingen, lange opzegtermijnen en verborgen kosten worden vaak pas ontdekt wanneer het te laat is.
-
-Daarnaast mist er een eenvoudige manier om lopende contracten op te volgen: documenten zitten verspreid, opzegdatums worden vergeten en gebruikers verliezen overzicht.
-
-Ook bij standaardcontracten (zoals telecom of energie) ontbreekt een plaats waar consumenten in één oogopslag kunnen zien wat ze precies tekenen.
-
-Contract Companion lost dit op door zowel persoonlijke contracten te analyseren als standaardcontracten vooraf duidelijk samen te vatten. Hierdoor kunnen gebruikers een contract begrijpen voor ze tekenen en georganiseerd blijven nadat het contract actief is.
-
----
-
-## Doelstellingen
-
-- Contracten begrijpelijk maken voor mensen zonder juridische kennis
-- Gebruikers helpen risico's en belangrijke clausules sneller te herkennen
-- Een veilige en centrale plaats bieden om contracten op te slaan en te beheren
-- Voorkomen dat gebruikers belangrijke deadlines, opzegtermijnen of verlengingen vergeten
-- Inzicht geven in standaardcontracten voor ondertekening
-- Het vertrouwen en de controle van gebruikers over hun contracten vergroten
+| Rol | Naam |
+|-----|------|
+| Product Owner | Tom Dekoning |
+| Dev/Database | Lars Biczysko |
+| Design/Dev | Ahmed Takadoumi |
+| Dev | Waïl Zemouri |
+| Dev | Fariss Boughaba |
 
 ---
 
-## Kernfunctionaliteiten  
+## ❓ Probleemstelling
 
-  ### Automatische Analyse
-    - OCR wordt geondersteund voor **PDF, Word, TXT**  
-    - Detectie van kerninformatie (looptijd, opzegtermijn, verlengingen)  
-    - Duidelijke samenvatting in duidelijke taal 
-    - Automatische **risico- en red-flag detectie**
+Mensen ondertekenen contracten zonder de inhoud te begrijpen. Belangrijke clausules zoals automatische verlengingen, lange opzegtermijnen en verborgen kosten worden vaak te laat ontdekt.
 
-  ### Contractbeheer  
-    - Dashboard met alle geüploade contracten  
-    - Filters: actief, opzegbaar, verlopen  
-    - Tags, notities, markeringen  
-    - Bekijken van individuele analyse-resultaten
+**Kernproblemen:**
+- 🔍 Ingewikkeld juridisch taalgebruik en verborgen clausules
+- 📁 Contracten verspreid over mail, drives en folders
+- ⏰ Vergeten deadlines en automatische verlengingen
 
-  ### Herinneringen  
-    - Automatische notificaties voor:  
-      - Opzegdeadlines  
-      - Proefperiodes  
-      - Vervaldatums
-
-  ### Overzicht & Monitoring  
-    - Heldere visuele weergave van risico’s  
-    - Filter- en sorteeropties  
-    - Snel inzicht in deadlines
----
-
-## Doelgroep
-
-Contract Companion richt zich op particulieren, starters, huurders, freelancers en kleine ondernemingen die regelmatig contracten ondertekenen, maar niet de tijd of juridische expertise hebben om alle clausules volledig te interpreteren.
-
-De applicatie ondersteunt twee belangrijke gebruikssituaties:
-1. Voor ondertekening: gebruikers willen inzicht in nieuwe contracten voordat ze tekenen, om risico's en voorwaarden te begrijpen
-2. Na ondertekening: gebruikers willen lopende contracten beheren, deadlines volgen en automatische verlengingen voorkomen
+**Onze Oplossing:**
+- Dedicated, veilige plaats voor contractopslag
+- AI-analyse gespecialiseerd in contracten
+- Automatische opvolging en herinneringen
+- Vooraf geanalyseerde standaardcontracten
+- Privacy-first: data wordt niet gebruikt voor training
 
 ---
 
-## Gebruikersflow
+## 🎨 Design Thinking
 
-### 1. Registratie en Login
-Gebruiker maakt een account aan of logt in met bestaande credentials.
+We volgden de **Design Thinking** methodologie:
 
-### 2. Contract Upload
-Gebruiker uploadt een contractbestand via de upload-interface. Ondersteunde formaten zijn PDF, Word en TXT. Gebruikers kunnen ook de standaardcontracten-bibliotheek raadplegen voor vooraf geanalyseerde contracten.
+1. **Empathize**: Onderzoek naar gebruikersproblemen (interviews, observaties)
+2. **Define**: Probleem gekaderd - wie, wat, waar, waarom
+3. **Ideate**: Brainstorm sessies → kernfuncties bepaald
+4. **Prototype**: [Figma wireframes](https://www.figma.com/design/VHRMdl77RiM7ZNSNLk8qwU/IT-project) en [demo](https://youtu.be/lY44BLT9CS8)
+5. **Test**: Iteratieve verbeteringen met gebruikerstests
 
-### 3. Automatische Analyse
-Het systeem verwerkt het document met OCR en AI-analyse. De structuur wordt geëxtraheerd, kerninformatie wordt geïdentificeerd en risico's worden gedetecteerd.
-
-### 4. Resultaten Bekijken
-Contract verschijnt in het persoonlijke dashboard met een gedetailleerde analyse, inclusief risicoscore, belangrijke clausules en duidelijke samenvatting in begrijpelijke taal.
-
-### 5. Beheer en Monitoring
-Gebruiker kan het contract aanvullen met metadata, tags en notities toevoegen. Belangrijke datums worden automatisch gevolgd via de kalender.
-
-### 6. Herinneringen en Opvolging
-Het systeem stuurt automatische notificaties voor naderende deadlines, opzegtermijnen en belangrijke datums via e-mail of kalenderintegratie.
+**Doelgroep**: Freelancers, kleine ondernemers, huurders, studenten - mensen zonder juridische expertise die contracten moeten begrijpen en beheren.
 
 ---
 
-## Technology Stack
+## ⚙️ Kernfunctionaliteiten
 
-### Frontend
-- Vue.js 3 met Composition API - Voor het bouwen van een snelle en gebruiksvriendelijke webinterface
-- Vite als build tool - Voor efficiënte ontwikkeling en bundeling
-- Pinia voor state management - Voor centraal beheer van applicatiestatus
-- Vue Router voor navigatie - Voor routing binnen de applicatie
-- Vue I18n voor meertalige ondersteuning - Voor internationalisatie
-- CSS voor consistente styling
-
-### Backend
-- Node.js met Express framework - Voor server-side logica en API's
-- JWT authenticatie - Voor veilig inloggen en sessiebeheer
-- Multer voor bestandsupload - Voor veilige verwerking van geüploade contracten
-- bcryptjs voor wachtwoordencryptie - Voor veilige opslag van gebruikersgegevens
-
-### Database & Opslag
-- Oracle Database - Voor opslag van gebruikersgegevens en contractmetadata
-- Cloud storage (AWS S3 of vergelijkbaar) - Voor veilige opslag van contractbestanden
-
-### AI & Documentverwerking
-- Google Document AI - Voor OCR-technologie om tekst uit gescande PDF's en afbeeldingen te halen
-- AI/Language Model - Voor automatische samenvattingen en risicodetectie in contracten
-- Text preprocessing services - Voor voorbereiding van tekst voor analyse
-
-### Beveiliging
-- HTTPS-ondersteuning met zelfondertekende certificaten
-- JWT-gebaseerde authenticatie
-- Encryptie voor bescherming van gevoelige contractgegevens
-- Beveiligde bestandsupload met validatie
-
-### Notificaties & Integraties
-- E-mailnotificaties voor herinneringen rond verval- en opzegdata
-- Kalenderintegratie (Google Calendar, Outlook) voor het toevoegen van belangrijke contractmomenten
-
-### Ontwikkeltools & Samenwerking
-- Git & GitHub voor versiebeheer en teamsamenwerking
-- Pipelining voor consistente ontwikkel- en testomgevingen
-- ESLint voor code kwaliteit
-- Nodemon voor automatische server-restarts tijdens ontwikkeling
+| Functie | Beschrijving |
+|---------|-------------|
+| 🔍 **Automatische Analyse** | OCR voor PDF/Word/TXT • AI-samenvatting • Risico- en red-flag detectie |
+| 📁 **Contractbeheer** | Dashboard met filters • Tags & notities • Zoekfunctie |
+| 🔔 **Herinneringen** | Automatische notificaties • Kalenderintegratie (iCal) • E-mail alerts |
+| 📚 **Standaardcontracten** | Vooraf geanalyseerde contracten (telecom, energie, fitness) • Directe vergelijking |
+| 📊 **Monitoring** | Risicoscore per contract • Visuele weergave • Deadline overzicht |
 
 ---
 
-## Installatie
+## 🔄 Pipeline & Architectuur
+
+### Contract Analyse Pipeline
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         GEBRUIKER                                   │
+│                             ↓                                        │
+│                    ┌────────────────┐                               │
+│                    │  Upload Flow   │                               │
+│                    └────────────────┘                               │
+└─────────────────────────────────────────────────────────────────────┘
+                             ↓
+┌─────────────────────────────────────────────────────────────────────┐
+│                      FRONTEND (Vue.js)                              │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐            │
+│  │   Upload     │  │  Dashboard   │  │   Kalender   │            │
+│  │  Component   │  │  Component   │  │  Component   │            │
+│  └──────────────┘  └──────────────┘  └──────────────┘            │
+│         ↓                   ↓                  ↓                    │
+│  ┌──────────────────────────────────────────────────┐             │
+│  │         API Client (Axios)                       │             │
+│  └──────────────────────────────────────────────────┘             │
+└─────────────────────────────────────────────────────────────────────┘
+                             ↓
+┌─────────────────────────────────────────────────────────────────────┐
+│                     BACKEND (Express.js)                            │
+│  ┌──────────────────────────────────────────────────────────────┐ │
+│  │                    API Layer                                   │ │
+│  │  /auth  │  /contracts  │  /calendar  │  /preferences         │ │
+│  └──────────────────────────────────────────────────────────────┘ │
+│                             ↓                                        │
+│  ┌──────────────────────────────────────────────────────────────┐ │
+│  │               Middleware Layer                                │ │
+│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐            │ │
+│  │  │    Auth    │  │   Upload   │  │  Validator │            │ │
+│  │  │    (JWT)   │  │  (Multer)  │  │            │            │ │
+│  │  └────────────┘  └────────────┘  └────────────┘            │ │
+│  └──────────────────────────────────────────────────────────────┘ │
+│                             ↓                                        │
+│  ┌──────────────────────────────────────────────────────────────┐ │
+│  │                    Services Layer                            │ │
+│  │                                                               │ │
+│  │  ┌────────────────────────────────────────────────────────┐ │ │
+│  │  │         AI Orchestrator Service                        │ │ │
+│  │  │  (Coördineert alle AI-verwerkingsstappen)            │ │ │
+│  │  └────────────────────────────────────────────────────────┘ │ │
+│  │         ↓                      ↓                      ↓       │ │
+│  │  ┌──────────┐          ┌──────────┐          ┌──────────┐  │ │
+│  │  │ Document │          │   Text   │          │   LLM    │  │ │
+│  │  │   OCR    │    →     │Preprocess│    →     │Structurer│  │ │
+│  │  │ Service  │          │ Service  │          │ Service  │  │ │
+│  │  └──────────┘          └──────────┘          └──────────┘  │ │
+│  │                                                               │ │
+│  │  ┌──────────────────────────────────────────────────────┐  │ │
+│  │  │         Report Mapper Service                        │  │ │
+│  │  │  (Genereert eindrapport met alle analyses)          │  │ │
+│  │  └──────────────────────────────────────────────────────┘  │ │
+│  │                                                               │ │
+│  │  ┌──────────┐   ┌──────────┐   ┌──────────────┐           │ │
+│  │  │Contract  │   │  User    │   │ Preference   │           │ │
+│  │  │ Service  │   │ Service  │   │   Service    │           │ │
+│  │  └──────────┘   └──────────┘   └──────────────┘           │ │
+│  └──────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────┘
+                             ↓
+┌─────────────────────────────────────────────────────────────────────┐
+│                    EXTERNE SERVICES                                 │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐            │
+│  │   Google     │  │    OpenAI    │  │    Oracle    │            │
+│  │ Document AI  │  │  GPT Model   │  │   Database   │            │
+│  │     (OCR)    │  │  (Analyse)   │  │              │            │
+│  └──────────────┘  └──────────────┘  └──────────────┘            │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Verwerkingsstappen
+
+1. **Upload & Validatie**
+   - Gebruiker uploadt contract (PDF/Word/TXT)
+   - Frontend valideert bestandstype en grootte
+   - Backend ontvangt via Multer middleware
+
+2. **OCR & Text Extractie**
+   - Google Document AI verwerkt het document
+   - Tekst wordt geëxtraheerd uit PDF/afbeeldingen
+   - Text preprocessing normaliseert de tekst
+
+3. **AI-Analyse**
+   - LLM Structurer analyseert contractstructuur
+   - AI Orchestrator coördineert analyse
+   - Risicodetectie, clausule-extractie, samenvatting
+
+4. **Report Generatie**
+   - Report Mapper combineert alle analyses
+   - Risicoscore wordt berekend
+   - Gestructureerd rapport wordt gegenereerd
+
+5. **Opslag & Presentatie**
+   - Contract metadata wordt opgeslagen in Oracle DB
+   - Bestanden worden veilig opgeslagen
+   - Dashboard toont resultaten aan gebruiker
+
+6. **Monitoring & Herinneringen**
+   - Belangrijke datums worden geëxtraheerd
+   - Kalenderintegratie genereert ICS-bestanden
+   - E-mailnotificaties bij naderende deadlines
+
+---
+
+## 💻 Technology Stack
+
+**Frontend:** Vue.js 3 • Vite • Pinia • Vue Router  
+**Backend:** Node.js • Express • JWT • Multer • bcryptjs  
+**Database:** Oracle Database  
+**AI & OCR:** Google Document AI • OpenAI GPT  
+**Security:** HTTPS/TLS • JWT auth • bcrypt encryption  
+**Tools:** Git • GitHub • Trello • ESLint
+
+---
+
+## 📦 Installatie
 
 ### Vereisten
 - Node.js versie 20.19.0 of hoger
@@ -166,7 +211,7 @@ npm run install:frontend
 
 ### Stap 3: Omgevingsvariabelen configureren
 Maak een `.env` bestand aan in de backend map met de volgende variabelen:
-```
+```env
 PORT=3000
 HTTPS_PORT=3443
 HTTPS_KEY=../certs/key.pem
@@ -201,12 +246,12 @@ cd frontend && npm run dev
 ```
 
 De applicatie is nu beschikbaar op:
-- Frontend: http://localhost:5173
-- Backend: http://localhost:3000 of https://localhost:3443
+- **Frontend**: http://localhost:5173
+- **Backend**: https://localhost:3443
 
 ---
 
-## API Endpoints
+## 🔌 API Endpoints
 
 ### Authenticatie
 - `POST /api/auth/register` - Nieuwe gebruiker registreren
@@ -214,26 +259,76 @@ De applicatie is nu beschikbaar op:
 - `GET /api/auth/verify` - JWT token verifiëren
 
 ### Contracten
-- `GET /api/contracts` - Lijst van alle contracten ophalen
-- `POST /api/contracts` - Nieuw contract uploaden en analyseren
-- `GET /api/contracts/:id` - Specifiek contract ophalen
-- `PUT /api/contracts/:id` - Contract bijwerken
-- `DELETE /api/contracts/:id` - Contract verwijderen
+- `GET /api/contracts` - Lijst van alle contracten ophalen (authenticatie vereist)
+- `POST /api/contracts/upload` - Nieuw contract uploaden en analyseren (authenticatie vereist)
+- `POST /api/contracts/upload-raw` - Contract uploaden zonder AI-analyse (authenticatie vereist)
+- `GET /api/contracts/:id` - Specifiek contract ophalen (authenticatie vereist)
+- `PUT /api/contracts/:id` - Contract bijwerken (authenticatie vereist)
+- `DELETE /api/contracts/:id` - Contract verwijderen (authenticatie vereist)
 
 ### Standaardcontracten-Bibliotheek
-- `GET /api/common-contracts` - Lijst van vooraf geanalyseerde voorbeeldcontracten
-- `GET /api/common-contracts/:key` - Specifiek voorbeeldcontract ophalen
+- `GET /api/contracts/common` - Lijst van vooraf geanalyseerde standaardcontracten (publiek)
+- `GET /api/contracts/common/:id` - Specifiek standaardcontract ophalen (publiek)
+- `POST /api/contracts/common` - Nieuw standaardcontract toevoegen (admin)
+- `PUT /api/contracts/common/:id` - Standaardcontract bijwerken (admin)
+- `DELETE /api/contracts/common/:id` - Standaardcontract verwijderen (admin)
 
 ### Kalender
-- `GET /api/calendar` - Kalenderoverzicht met belangrijke contractdatums
-- `GET /api/calendar/events` - Alle gebeurtenissen ophalen
+- `GET /api/calendar/event.ics` - ICS-bestand genereren voor kalenderintegratie (authenticatie vereist)
 
 ### Voorkeuren
-- `GET /api/preferences` - Gebruikersvoorkeuren ophalen
-- `PUT /api/preferences` - Gebruikersvoorkeuren bijwerken
+- `GET /api/preferences/:userId` - Gebruikersvoorkeuren ophalen (authenticatie vereist)
+- `PUT /api/preferences/:userId` - Gebruikersvoorkeuren bijwerken (authenticatie vereist)
 
 ### Admin (alleen voor beheerders)
-- `GET /api/admin/users` - Alle gebruikers beheren
-- `POST /api/admin/common-contracts` - Nieuw voorbeeldcontract toevoegen aan bibliotheek
-- `PUT /api/admin/common-contracts/:id` - Voorbeeldcontract bijwerken
-- `DELETE /api/admin/common-contracts/:id` - Voorbeeldcontract verwijderen
+- `GET /api/people` - Alle gebruikers ophalen
+- `POST /api/people` - Nieuwe gebruiker aanmaken
+- `DELETE /api/people/:id` - Gebruiker verwijderen
+
+### Data Formats
+- **Request**: JSON / multipart/form-data (voor uploads)
+- **Response**: JSON
+- **Files**: PDF, Word, TXT (voor contracten)
+- **Encoding**: UTF-8
+
+---
+
+## 🔒 Security
+
+**Beveiliging:**
+- 🔐 HTTPS/TLS voor alle communicatie
+- 🔑 JWT authenticatie met sessie-timeout (2u)
+- 🛡️ bcrypt wachtwoord hashing
+- 🚫 Input validatie & sanitisatie
+- 🔒 RBAC (Role-Based Access Control)
+- ⚡ Rate limiting tegen brute force
+
+**Privacy:**
+- Versleutelde opslag van contracten
+- Data wordt NIET gebruikt voor AI-training
+- GDPR-compliant
+- Gebruikers hebben volledige controle
+
+---
+
+## 📊 Market Analysis
+
+**Concurrentie:** Enterprise tools (te complex/duur), ChatGPT (geen privacy/beheer), simpele opslag (geen analyse)
+
+**Onze USP's:**
+✅ Specifiek voor niet-juridische gebruikers  
+✅ Privacy-first benadering  
+✅ Combinatie analyse + beheer + herinneringen  
+✅ Standaardcontracten-bibliotheek  
+✅ Betaalbaar voor particulieren/KMO's
+
+<details>
+<summary><strong>SWOT Analyse</strong></summary>
+
+**Strengths:** Unieke combinatie functies • Privacy-focus • Gebruiksvriendelijk  
+**Weaknesses:** Afhankelijk van externe AI • Gebruikersvertrouwen opbouwen  
+**Opportunities:** Groeiende markt (freelancers, KMO's) • Integraties • Internationalisatie  
+**Threats:** Grote spelers • Regelgeving • Concurrentie AI-tools  
+</details>
+
+---
