@@ -19,7 +19,7 @@ export async function getPreferences(req, res) {
 
 export async function updatePreferences(req, res) {
   const userId = req.params.userId;
-  const { theme, lang } = req.body;
+  const { theme, lang, expiryReminderDays } = req.body;
 
   // only own preferences, unless admin
   if (!req.user?.isAdmin && String(req.user?.id) !== String(userId)) {
@@ -27,7 +27,7 @@ export async function updatePreferences(req, res) {
   }
 
   try {
-    await preferenceService.updatePreferences(userId, theme, lang);
+    await preferenceService.updatePreferences(userId, theme, lang, expiryReminderDays);
     res.json({ message: "Preferences saved" });
   } catch (err) {
     console.error(err);
