@@ -291,7 +291,7 @@ const availableMonths = computed(() => {
     return months
   }
   const set = new Set()
-  reports.forEach(r => {
+  ;(reports.value || []).forEach(r => {
     const { month, year } = extractMonthYear(r.date)
     if (year === yearFilter.value && month) {
       set.add(month)
