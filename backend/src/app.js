@@ -36,27 +36,12 @@ app.use(
     },
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    preflightContinue: false,
+    optionsSuccessStatus: 200,
   })
 );
 
 app.use(express.json());
-
-// Globale OPTIONS handler voor ALLE routes
-app.use((req, res, next) => {
-  if (req.method === 'OPTIONS') {
-    const origin = req.headers.origin;
-    const isAllowed = allowedOrigins.some(o => typeof o === 'string' ? o === origin : o.test(origin));
-    if (isAllowed) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-      res.setHeader('Access-Control-Allow-Credentials', 'true');
-      res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
-      return res.sendStatus(204);
-    }
-    return res.sendStatus(403);
-  }
-  next();
-});
 
 // --- SSE support for contract analysis events, direct in app.js to bypass CORS middleware ---
 let sseClients = [];
