@@ -19,19 +19,41 @@ const app = express();
 // --- SSE support for contract analysis events, direct in app.js to bypass CORS middleware ---
 let sseClients = [];
 app.options('/api/contracts/events', (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', 'https://localhost:5173');
+  // Dynamisch origin voor ngrok en productie
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "https://localhost:5173",
+    "https://localhost:5174",
+    "https://ehbcontractcompanion.tombomeke.com",
+    /^https:\/\/[a-z0-9]+\.ngrok-free\.app$/
+  ];
+  const isAllowed = allowedOrigins.some(o => typeof o === 'string' ? o === origin : o.test(origin));
+  res.setHeader('Access-Control-Allow-Origin', isAllowed ? origin : '');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.sendStatus(200);
 });
 app.get('/api/contracts/events', (req, res) => {
+  // Dynamisch origin voor ngrok en productie
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "https://localhost:5173",
+    "https://localhost:5174",
+    "https://ehbcontractcompanion.tombomeke.com",
+    /^https:\/\/[a-z0-9]+\.ngrok-free\.app$/
+  ];
+  const isAllowed = allowedOrigins.some(o => typeof o === 'string' ? o === origin : o.test(origin));
+  res.setHeader('Access-Control-Allow-Origin', isAllowed ? origin : '');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Vary', 'Origin');
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
-  res.setHeader('Access-Control-Allow-Origin', 'https://localhost:5173');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Vary', 'Origin');
   res.flushHeaders();
   sseClients.push(res);
 
@@ -64,23 +86,22 @@ app.post('/api/contracts/notify-analyzed', express.json(), (req, res) => {
   }
 });
 
-// Allow both local dev frontend and production frontend on Combell
+// Dynamisch allowedOrigins zodat ngrok, localhost en productie altijd werken
 const allowedOrigins = [
-  "http://localhost:5173", // Vite dev server (HTTP)
-  "http://localhost:5174", // Vite dev server (alt port)
-  "https://localhost:5173", // Vite dev server (HTTPS)
-  "https://localhost:5174", // Vite dev server (alt port HTTPS)
-  "https://ehbcontractcompanion.tombomeke.com", // Combell production frontend
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "https://localhost:5173",
+  "https://localhost:5174",
+  "https://ehbcontractcompanion.tombomeke.com",
+  /^https:\/\/[a-z0-9]+\.ngrok-free\.app$/
 ];
 
 app.use(
   cors({
     origin(origin, callback) {
-      // Allow requests without origin (e.g. curl, Postman)
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
+      const isAllowed = allowedOrigins.some(o => typeof o === 'string' ? o === origin : o.test(origin));
+      if (isAllowed) return callback(null, true);
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
