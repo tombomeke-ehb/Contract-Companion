@@ -11,8 +11,8 @@ import preferencesRoutes from "./routes/preferences.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import calendarRoutes from "./routes/calendar.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
-
 import peopleRoutes from "./routes/people.routes.js";
+import commonContractRoutes from './routes/commonContract.routes.js';
 
 const app = express();
 
@@ -101,6 +101,7 @@ app.use("/api", adminRoutes);
 app.use("/api/people", peopleRoutes);
 app.use("/api", calendarRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/common-contracts', commonContractRoutes);
 
 // Global error handler (should be last middleware)
 app.use((err, req, res, next) => {
