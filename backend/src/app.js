@@ -16,41 +16,70 @@ import commonContractRoutes from './routes/commonContract.routes.js';
 
 const app = express();
 
+// Dynamisch allowedOrigins zodat ngrok, localhost en productie altijd werken
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "https://localhost:5173",
+  "https://localhost:5174",
+  "https://ehbcontractcompanion.tombomeke.com",
+  /^https:\/\/[a-z0-9]+\.ngrok-free\.app$/
+];
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin) return callback(null, true);
+      const isAllowed = allowedOrigins.some(o => typeof o === 'string' ? o === origin : o.test(origin));
+      if (isAllowed) return callback(null, true);
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  })
+);
+
+app.use(express.json());
+
+// Globale OPTIONS handler voor ALLE routes
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    const origin = req.headers.origin;
+    const isAllowed = allowedOrigins.some(o => typeof o === 'string' ? o === origin : o.test(origin));
+    if (isAllowed) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
+      return res.sendStatus(204);
+    }
+    return res.sendStatus(403);
+  }
+  next();
+});
+
 // --- SSE support for contract analysis events, direct in app.js to bypass CORS middleware ---
 let sseClients = [];
 app.options('/api/contracts/events', (req, res) => {
-  // Dynamisch origin voor ngrok en productie
   const origin = req.headers.origin;
-  const allowedOrigins = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "https://localhost:5173",
-    "https://localhost:5174",
-    "https://ehbcontractcompanion.tombomeke.com",
-    /^https:\/\/[a-z0-9]+\.ngrok-free\.app$/
-  ];
   const isAllowed = allowedOrigins.some(o => typeof o === 'string' ? o === origin : o.test(origin));
-  res.setHeader('Access-Control-Allow-Origin', isAllowed ? origin : '');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.sendStatus(200);
+  if (isAllowed) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
+    return res.sendStatus(200);
+  }
+  return res.sendStatus(403);
 });
 app.get('/api/contracts/events', (req, res) => {
-  // Dynamisch origin voor ngrok en productie
   const origin = req.headers.origin;
-  const allowedOrigins = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "https://localhost:5173",
-    "https://localhost:5174",
-    "https://ehbcontractcompanion.tombomeke.com",
-    /^https:\/\/[a-z0-9]+\.ngrok-free\.app$/
-  ];
   const isAllowed = allowedOrigins.some(o => typeof o === 'string' ? o === origin : o.test(origin));
-  res.setHeader('Access-Control-Allow-Origin', isAllowed ? origin : '');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Vary', 'Origin');
+  if (isAllowed) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Vary', 'Origin');
+  }
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
@@ -85,30 +114,6 @@ app.post('/api/contracts/notify-analyzed', express.json(), (req, res) => {
     res.status(400).json({ error: 'Missing contractId' });
   }
 });
-
-// Dynamisch allowedOrigins zodat ngrok, localhost en productie altijd werken
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "https://localhost:5173",
-  "https://localhost:5174",
-  "https://ehbcontractcompanion.tombomeke.com",
-  /^https:\/\/[a-z0-9]+\.ngrok-free\.app$/
-];
-
-app.use(
-  cors({
-    origin(origin, callback) {
-      if (!origin) return callback(null, true);
-      const isAllowed = allowedOrigins.some(o => typeof o === 'string' ? o === origin : o.test(origin));
-      if (isAllowed) return callback(null, true);
-      return callback(new Error("Not allowed by CORS"));
-    },
-    credentials: true,
-  })
-);
-
-app.use(express.json());
 
 // static files
 app.use("/public", express.static(path.join(process.cwd(), "public")));
