@@ -199,6 +199,7 @@ import { downloadServerIcs as downloadServerIcsApi } from '../api/calendar'
 import { useContractStore } from '../stores/contractStore'
 import { getContractById, updateContractInfo } from '../api/contracts'
 import { useNotificationStore } from '../stores/notificationStore'
+import { getCommonContractReport } from '../api/commonContracts'
 
 /**
  * Get color for risk score circle based on score value
@@ -607,9 +608,8 @@ const isCommonPage = computed(() => String(route.query?.from || '') === 'common'
 // Active report: backend data when available, otherwise demo for common contracts
 const report = computed(() => {
   if (isCommonPage.value) {
-    return reports[routeId.value || '1']
+    return currentReport.value
   }
-
   return currentReport.value
 })
 
@@ -619,16 +619,20 @@ const currentReport = ref(null)
 
 async function loadReport() {
   loadError.value = ''
-
-  // For common/demo reports we just use the local dataset
-  if (isCommonPage.value) {
-    currentReport.value = null
-    return
-  }
-
   const id = routeId.value
-  if (!id) {
-    loadError.value = 'No report id provided.'
+  if (isCommonPage.value) {
+    try {
+      const report = await getCommonContractReport(id)
+      if (!report) {
+        loadError.value = 'Report not found.'
+        currentReport.value = null
+        return
+      }
+      currentReport.value = report
+    } catch (e) {
+      loadError.value = e?.message || 'Failed to load report.'
+      currentReport.value = null
+    }
     return
   }
 
@@ -698,7 +702,7 @@ const normalizedReport = computed(() => {
   const r = currentReport.value || contractStore.getReportById(id) || reports[id] || {}
   const risk = r.risk || (r.riskLabel ? r.riskLabel.toLowerCase().includes('high') ? 'high' : r.riskLabel.toLowerCase().includes('medium') ? 'medium' : 'low' : 'low')
   const riskLabel = r.riskLabel || (risk === 'high' ? 'High risk' : risk === 'medium' ? 'Medium risk' : 'Low risk')
-  return {
+  const normalized = {
     title: editedInfo.title || r.title || 'Contract',
     contractType: editedInfo.contractType || r.contractType || 'Contract',
     date: r.date || r.uploadedAt || '',
@@ -714,6 +718,7 @@ const normalizedReport = computed(() => {
     actions: r.actions || [],
     clauses: r.clauses || {},
   }
+  return normalized
 })
 
 // Keep reminder date in sync with contract end date by default
