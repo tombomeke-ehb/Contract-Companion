@@ -14,9 +14,11 @@ async function login(credentials) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true",
       },
       // Verstuur de ingevulde login-gegevens als JSON-body
       body: JSON.stringify(credentials),
+      credentials: "include",
     }
   );
 
@@ -48,9 +50,11 @@ async function signup(userData) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true",
       },
       // Verstuur de registratiegegevens als JSON-body
       body: JSON.stringify(userData),
+      credentials: "include",
     }
   );
 

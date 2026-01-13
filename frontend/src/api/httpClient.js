@@ -9,6 +9,8 @@ async function request(path, options = {}) {
   const headers = {
     'Content-Type': 'application/json',
     ...(options.headers || {}),
+    // Voeg ngrok-skip-browser-warning altijd toe
+    'ngrok-skip-browser-warning': 'true',
   };
 
   // Include the Authorization header if the token exists

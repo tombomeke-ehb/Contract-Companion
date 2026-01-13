@@ -31,6 +31,7 @@ export async function uploadContract(file, contractType = '', notes = '') {
     headers: {
       // JWT-token meesturen voor beveiligde backend routes
       Authorization: `Bearer ${token}`,
+      'ngrok-skip-browser-warning': 'true',
     },
     body: form,
     credentials: "include",
