@@ -20,7 +20,8 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:5173",
   "https://localhost:5173",
-  "https://ehbcontractcompanion.tombomeke.com"
+  "https://ehbcontractcompanion.tombomeke.com",
+  "https://212184b4e298.ngrok-free.app" // <-- ngrok URL toegevoegd
 ];
 
 app.use(
