@@ -62,7 +62,7 @@
           <div class="card-subtitle">Updated {{ contract.updated }}</div>
           <RouterLink
             class="btn btn-outline"
-            :to="{ name: 'report-detail', params: { id: contract.sampleReport }, query: { from: 'common' } }"
+            :to="{ name: 'report-detail', params: { id: contract.id }, query: { from: 'common' } }"
           >
             View analysis
           </RouterLink>
@@ -114,3 +114,88 @@ async function loadContracts() {
 
 onMounted(loadContracts)
 </script>
+
+<style scoped>
+.contracts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 2rem;
+  align-items: stretch;
+}
+.contract-card {
+  min-width: 0;
+  max-width: 600px;
+  width: 100%;
+  padding: 1.5rem 1.25rem;
+  box-sizing: border-box;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0.75rem;
+}
+.contract-card .page-eyebrow {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #64748b;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.contract-card .card-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  line-height: 1.2;
+  word-break: break-word;
+  max-height: 2.6em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.contract-card .card-subtitle {
+  font-size: 0.98rem;
+  color: #334155;
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+  max-height: 8em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.contract-risks {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.badge {
+  font-size: 0.95rem;
+  padding: 0.35em 1em;
+  border-radius: 8px;
+  font-weight: 600;
+  display: inline-block;
+}
+.badge-high {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+.badge-medium {
+  background: #fef9c3;
+  color: #ca8a04;
+  border: 1px solid #fde68a;
+}
+.badge-low {
+  background: #d1fae5;
+  color: #059669;
+  border: 1px solid #6ee7b7;
+}
+@media (max-width: 900px) {
+  .contracts-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+</style>
