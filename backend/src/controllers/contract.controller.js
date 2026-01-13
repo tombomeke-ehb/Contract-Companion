@@ -20,9 +20,15 @@ export async function analyzeContract(req, res, next) {
 
     const filePath = req.file.path;
 
+    // DEBUG: Log file info
+    console.log('[analyzeContract] filePath:', filePath, 'originalname:', req.file.originalname, 'mimetype:', req.file.mimetype);
+
     // OCR execute
     const document = await processContractPdf(filePath);
     const fullText = document.text || "";
+
+    // DEBUG: Log OCR result length
+    console.log('[analyzeContract] OCR text length:', fullText.length);
 
     // Uploaded bestand opruimen - we bewaren enkel de tekst/AI-resultaten
     try {
@@ -32,13 +38,29 @@ export async function analyzeContract(req, res, next) {
     const contractType = req.body?.contractType || "";
     const notes = req.body?.notes || "";
 
+    // DEBUG: Log contractType and notes
+    console.log('[analyzeContract] contractType:', contractType, 'notes:', notes);
+
     // 2. Run new two-stage AI pipeline on the OCR text, passing contractType and notes
     const aiResult = await analyzeContractText(fullText, contractType, notes);
 
+    // DEBUG: Log AI result keys
+    console.log('[analyzeContract] aiResult keys:', Object.keys(aiResult));
+
     // 3. Extract risk score from LLM2 for persistence
-    // Haal riskScore uit report als fallback
-    const report = mapLlm2ToReport(aiResult.llm2);
-    const riskScore = report.riskScore ?? aiResult?.llm2?.riskScore ?? aiResult?.llm2?.overallRiskScore;
+    // Defensive: report kan null zijn
+    let report = null;
+    try {
+      report = mapLlm2ToReport(aiResult.llm2);
+    } catch (e) {
+      report = {};
+    }
+    const riskScore = (report && typeof report.riskScore !== 'undefined' && report.riskScore !== null)
+      ? report.riskScore
+      : (aiResult?.llm2?.riskScore ?? aiResult?.llm2?.overallRiskScore ?? 0);
+
+    // DEBUG: Log report and riskScore
+    console.log('[analyzeContract] report:', report, 'riskScore:', riskScore);
 
     // Use the JWT payload field "id" for the current user
     const userId = req.user?.id || null;
@@ -78,6 +100,7 @@ export async function analyzeContract(req, res, next) {
       report,
     });
   } catch (err) {
+    console.error('[analyzeContract] ERROR:', err);
     next(err);
   }
 }
