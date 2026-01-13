@@ -29,6 +29,8 @@ app.use(
     origin(origin, callback) {
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) return callback(null, origin);
+      // Log rejected origins voor debug
+      console.warn('CORS blocked for origin:', origin);
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
@@ -51,6 +53,8 @@ app.options('/api/contracts/events', (req, res) => {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
     return res.sendStatus(200);
   }
+  // Log rejected origins voor debug
+  console.warn('SSE CORS blocked for origin:', origin);
   return res.sendStatus(403);
 });
 app.get('/api/contracts/events', (req, res) => {
@@ -59,6 +63,9 @@ app.get('/api/contracts/events', (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Vary', 'Origin');
+  } else {
+    // Log rejected origins voor debug
+    console.warn('SSE CORS blocked for origin:', origin);
   }
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
