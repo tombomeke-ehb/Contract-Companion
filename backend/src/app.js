@@ -16,23 +16,18 @@ import commonContractRoutes from './routes/commonContract.routes.js';
 
 const app = express();
 
-// Dynamisch allowedOrigins zodat ngrok, localhost en productie altijd werken
+// Simpele CORS: alleen je frontend origins toestaan, geen regex/dynamisch
 const allowedOrigins = [
   "http://localhost:5173",
-  "http://localhost:5174",
   "https://localhost:5173",
-  "https://localhost:5174",
-  "https://ehbcontractcompanion.tombomeke.com",
-  /^https:\/\/[a-z0-9]+\.ngrok-free\.app$/
+  "https://ehbcontractcompanion.tombomeke.com"
 ];
 
 app.use(
   cors({
     origin(origin, callback) {
       if (!origin) return callback(null, true);
-      // Fix: always match regex for ngrok, never return * or ''
-      const isAllowed = allowedOrigins.some(o => typeof o === 'string' ? o === origin : o instanceof RegExp && o.test(origin));
-      if (isAllowed) return callback(null, origin);
+      if (allowedOrigins.includes(origin)) return callback(null, origin);
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
@@ -48,8 +43,7 @@ app.use(express.json());
 let sseClients = [];
 app.options('/api/contracts/events', (req, res) => {
   const origin = req.headers.origin;
-  const isAllowed = allowedOrigins.some(o => typeof o === 'string' ? o === origin : o instanceof RegExp && o.test(origin));
-  if (isAllowed) {
+  if (allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
@@ -60,8 +54,7 @@ app.options('/api/contracts/events', (req, res) => {
 });
 app.get('/api/contracts/events', (req, res) => {
   const origin = req.headers.origin;
-  const isAllowed = allowedOrigins.some(o => typeof o === 'string' ? o === origin : o instanceof RegExp && o.test(origin));
-  if (isAllowed) {
+  if (allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Vary', 'Origin');
