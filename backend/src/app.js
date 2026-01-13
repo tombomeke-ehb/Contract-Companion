@@ -30,8 +30,9 @@ app.use(
   cors({
     origin(origin, callback) {
       if (!origin) return callback(null, true);
-      const isAllowed = allowedOrigins.some(o => typeof o === 'string' ? o === origin : o.test(origin));
-      if (isAllowed) return callback(null, true);
+      // Fix: always match regex for ngrok, never return * or ''
+      const isAllowed = allowedOrigins.some(o => typeof o === 'string' ? o === origin : o instanceof RegExp && o.test(origin));
+      if (isAllowed) return callback(null, origin);
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
@@ -47,7 +48,7 @@ app.use(express.json());
 let sseClients = [];
 app.options('/api/contracts/events', (req, res) => {
   const origin = req.headers.origin;
-  const isAllowed = allowedOrigins.some(o => typeof o === 'string' ? o === origin : o.test(origin));
+  const isAllowed = allowedOrigins.some(o => typeof o === 'string' ? o === origin : o instanceof RegExp && o.test(origin));
   if (isAllowed) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -59,7 +60,7 @@ app.options('/api/contracts/events', (req, res) => {
 });
 app.get('/api/contracts/events', (req, res) => {
   const origin = req.headers.origin;
-  const isAllowed = allowedOrigins.some(o => typeof o === 'string' ? o === origin : o.test(origin));
+  const isAllowed = allowedOrigins.some(o => typeof o === 'string' ? o === origin : o instanceof RegExp && o.test(origin));
   if (isAllowed) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
