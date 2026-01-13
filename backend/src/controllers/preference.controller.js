@@ -10,7 +10,7 @@ export async function getPreferences(req, res) {
 
   try {
     const prefs = await preferenceService.getPreferences(userId);
-    // Stuur alle relevante velden mee
+    // Send all relevant fields
     res.json({
       theme: prefs.theme,
       lang: prefs.lang,
