@@ -3,6 +3,7 @@
 
 import oracledb from "oracledb";
 import { query } from "../config/db.js";
+import { createReport, getReportById } from "./report.service.js";
 
 /**
  * Get all common contracts from the database
@@ -57,12 +58,24 @@ export async function createCommonContract(contract) {
     summary = '',
     stats = {},
     updated = '',
-    sampleReport = 1,
+    analysisReport = null, // <-- new field for full report
   } = contract;
 
   // Generate slug from name if no ID provided
   const slugBase = String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   const contractKey = id && String(id).trim() ? String(id) : `${slugBase}-${Date.now().toString(36)}`;
+
+  // Store analysis report and get its ID
+  if (analysisReport) {
+    console.log('[createCommonContract] analysisReport received:', JSON.stringify(analysisReport));
+  } else {
+    console.warn('[createCommonContract] NO analysisReport received, using fallback ID 1');
+  }
+  let sampleReportId = 1;
+  if (analysisReport) {
+    sampleReportId = await createReport(analysisReport);
+    console.log('[createCommonContract] New report stored with ID:', sampleReportId);
+  }
 
   const sql = `
     INSERT INTO COMMON_CONTRACTS (
@@ -85,14 +98,13 @@ export async function createCommonContract(contract) {
     riskMedium: Number(stats.medium || 0),
     riskLow: Number(stats.low || 0),
     updatedText: updated || new Date().toLocaleString('en-US', { month: 'short', year: 'numeric' }),
-    sampleReportId: Number(sampleReport),
+    sampleReportId: Number(sampleReportId),
   };
 
   let conn;
   try {
     conn = await oracledb.getConnection();
     await conn.execute(sql, bindParams, { autoCommit: true });
-    
     // Return the created contract
     return {
       id: contractKey,
@@ -213,4 +225,60 @@ export async function deleteCommonContract(contractKey) {
   } finally {
     if (conn) await conn.close();
   }
+}
+
+// Helper to map string[] to {title, body}[]
+function toFindingObjects(arr) {
+  if (!Array.isArray(arr)) return [];
+  return arr.map(item =>
+    typeof item === 'string'
+      ? { title: item, body: '' }
+      : item
+  );
+}
+function toActionObjects(arr) {
+  if (!Array.isArray(arr)) return [];
+  return arr.map(item =>
+    typeof item === 'string'
+      ? { title: item, body: '' }
+      : item
+  );
+}
+
+/**
+ * Get the analysis report for a common contract by key
+ * @param {string} contractKey - The CONTRACT_KEY identifier
+ */
+export async function getCommonContractReport(contractKey) {
+  const sql = `SELECT SAMPLE_REPORT_ID FROM COMMON_CONTRACTS WHERE CONTRACT_KEY = :contractKey`;
+  const result = await query(sql, { contractKey });
+  if (!result.rows.length) {
+    return null;
+  }
+  const sampleReportId = result.rows[0].SAMPLE_REPORT_ID;
+  if (!sampleReportId) {
+    return null;
+  }
+  const report = await getReportById(sampleReportId);
+  if (!report) {
+    return null;
+  }
+  // Map backend fields to frontend expected fields
+  const mapped = {
+    title: report.title,
+    contractType: report.contractType,
+    date: report.analyzedAt || report.date,
+    riskScore: report.riskScore ?? report.overallRiskScore ?? 0,
+    risk: report.risk ?? report.overallRisk ?? '',
+    riskLabel: report.riskLabel ?? report.overallRiskLabel ?? '',
+    keySummary: report.keySummary ?? '',
+    humanSummary: report.humanSummary ?? '',
+    keyFindings: toFindingObjects(report.keyFindings ?? []),
+    summary: report.summary ?? report.executiveSummary ?? '',
+    focus: report.focus ?? report.focusTags ?? [],
+    breakdown: report.breakdown ?? report.clauseBreakdown ?? {},
+    actions: toActionObjects(report.actions ?? report.recommendedActions ?? []),
+    clauses: report.clauses ?? {},
+  };
+  return mapped;
 }

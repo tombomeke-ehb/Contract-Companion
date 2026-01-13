@@ -17,11 +17,13 @@ export const useNotificationStore = defineStore('notifications', () => {
     message = '',
     variant = 'info', // 'success' | 'info' | 'warning' | 'danger'
     timeout = 3500,
-    isContractExpiry = false
+    isContractExpiry = false,
+    contractId = null // <-- nieuw veld voor navigatie
   }) {
     const id = nextId++
-    const toast = { id, title, message, variant, timeout, isContractExpiry, createdAt: Date.now() }
+    const toast = { id, title, message, variant, timeout, isContractExpiry, contractId, createdAt: Date.now(), read: false }
     toasts.value = [...toasts.value, toast]
+    // Alleen toevoegen aan inbox als het geen tijdelijke toast is
     inbox.value = [toast, ...inbox.value]
 
     // If it's a contract expiry notification, increment the count
@@ -30,18 +32,23 @@ export const useNotificationStore = defineStore('notifications', () => {
     }
 
     if (timeout && timeout > 0) {
-      window.setTimeout(() => dismiss(id), timeout)
+      window.setTimeout(() => {
+        // Alleen uit toasts verwijderen, niet uit inbox
+        toasts.value = toasts.value.filter((t) => t.id !== id)
+      }, timeout)
     }
 
     return id
   }
 
   function dismiss(id) {
-    const toast = toasts.value.find(t => t.id === id)
+    // Remove from both toasts and inbox
+    const toast = toasts.value.find(t => t.id === id) || inbox.value.find(t => t.id === id)
     if (toast?.isContractExpiry && expiringContractCount.value > 0) {
       expiringContractCount.value--
     }
     toasts.value = toasts.value.filter((t) => t.id !== id)
+    inbox.value = inbox.value.map(t => t.id === id ? { ...t, read: true } : t).filter((t) => t.id !== id)
   }
 
   function clear() {
@@ -54,12 +61,12 @@ export const useNotificationStore = defineStore('notifications', () => {
     expiringContractCount.value = count
   }
 
-  return { 
-    toasts: visibleToasts, 
+  return {
+    toasts: visibleToasts,
     inbox: inboxItems,
     expiringContractCount: computed(() => expiringContractCount.value),
-    push, 
-    dismiss, 
+    push,
+    dismiss,
     clear,
     setExpiringContractCount
   }

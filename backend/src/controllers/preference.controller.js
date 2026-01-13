@@ -10,7 +10,15 @@ export async function getPreferences(req, res) {
 
   try {
     const prefs = await preferenceService.getPreferences(userId);
-    res.json(prefs);
+    // Stuur alle relevante velden mee
+    res.json({
+      theme: prefs.theme,
+      lang: prefs.lang,
+      expiryReminderDays: prefs.expiryReminderDays,
+      autoDeleteDays: prefs.autoDeleteDays,
+      riskAlerts: prefs.riskAlerts,
+      riskAlertsEmail: prefs.riskAlertsEmail
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Could not fetch preferences" });
@@ -19,7 +27,7 @@ export async function getPreferences(req, res) {
 
 export async function updatePreferences(req, res) {
   const userId = req.params.userId;
-  const { theme, lang } = req.body;
+  const { theme, lang, expiryReminderDays, riskAlerts, riskAlertsEmail, autoDeleteDays } = req.body;
 
   // only own preferences, unless admin
   if (!req.user?.isAdmin && String(req.user?.id) !== String(userId)) {
@@ -27,7 +35,7 @@ export async function updatePreferences(req, res) {
   }
 
   try {
-    await preferenceService.updatePreferences(userId, theme, lang);
+    await preferenceService.updatePreferences(userId, theme, lang, expiryReminderDays, riskAlerts, riskAlertsEmail, autoDeleteDays);
     res.json({ message: "Preferences saved" });
   } catch (err) {
     console.error(err);

@@ -24,6 +24,9 @@ export function authenticate(req, res, next) {
   }
 }
 
+// Alias voor compatibiliteit met oude requireAuth import
+export const requireAuth = authenticate;
+
 // Middleware to control if the user is an admin
 export function isAdmin(req, res, next) {
   if (!req.user?.isAdmin) {

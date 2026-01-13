@@ -12,7 +12,9 @@ import {
   createCommonContract,
   updateCommonContract,
   deleteCommonContract,
-  deleteContract
+  deleteContract,
+  updateContractInfo,
+  uploadContractAsync
 } from "../controllers/contract.controller.js";
 
 const router = express.Router();
@@ -51,6 +53,9 @@ router.use(authenticate);
 
 // Upload + analyse of a contract (user + admin)
 router.post("/upload", uploadWithValidation, analyzeContract);
+
+// Nieuwe async upload route
+router.post("/upload-async", uploadWithValidation, uploadContractAsync);
 
 // Low-level OCR endpoint, useful for debugging / tools
 router.post("/upload-raw", uploadWithValidation, async (req, res) => {
@@ -95,8 +100,11 @@ router.get("/", getContracts);
 // Detail van één contract (voor later detailweergave / debug)
 router.get("/:id", getContractDetail);
 
-// Verwijder contract
+// Verwijder contract (user + admin)
 router.delete("/:id", deleteContract);
+
+// Update contract info (title and type)
+router.put("/:id/info", updateContractInfo);
 
 // Admin-manageable "common contracts" library (admin only voor beheer)
 router.post("/common", isAdmin, createCommonContract);

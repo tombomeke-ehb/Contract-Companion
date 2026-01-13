@@ -29,7 +29,8 @@ export const useUserStore = defineStore('user', () => {
         theme: prefsRaw.THEME || 'light',
         lang: prefsRaw.LANG || 'nl',
         region: prefsRaw.REGION ?? null,
-        sessionTimeout: prefsRaw.SESSION_TIMEOUT ?? 30
+        sessionTimeout: prefsRaw.SESSION_TIMEOUT ?? 30,
+        expiryReminderDays: prefsRaw.EXPIRY_REMINDER_DAYS ?? 7
       }
       preferences.value = prefs
       applyTheme(prefs.theme)

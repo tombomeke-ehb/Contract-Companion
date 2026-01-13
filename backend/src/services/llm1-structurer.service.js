@@ -15,32 +15,16 @@ const LLM1_BASE_URL = process.env.LLM1_BASE_URL || "http://localhost:8000";
  * @param {string} language - ISO code of detected language (e.g. "en", "nl", "fr").
  * @returns {Promise<object>} Structured JSON from LLM1.
  */
-// Dummy structurer voor lokale tests zonder schoolserver
 export async function runLlm1Structurer({ text, language }) {
-  // Simuleer een simpele normalisatie
-  return {
-    sourceLanguage: language,
-    normalizedLanguage: "en",
-    normalizedText: text,
-    meta: {
-      contractTypeGuess: "Unknown",
-      titleGuess: "Sample contract",
-      parties: [],
-      jurisdictionGuess: "Unknown",
-      effectiveDate: null,
-      endDate: null
-    },
-    sections: {
-      parties: "",
-      duration: "",
-      termination: "",
-      renewal: "",
-      payment: "",
-      liability: "",
-      confidentiality: "",
-      jurisdiction: "",
-      other: ""
-    },
-    dates: []
-  };
+  // ECHTE CALL naar LLM1-backend (vervang dummy)
+  try {
+    const response = await axios.post(`${LLM1_BASE_URL}/structure`, {
+      text,
+      language
+    });
+    return response.data;
+  } catch (e) {
+    console.error('[runLlm1Structurer] LLM1 API error:', e?.response?.data || e);
+    throw new Error('LLM1 API error');
+  }
 }

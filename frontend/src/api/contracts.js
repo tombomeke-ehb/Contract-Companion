@@ -62,6 +62,36 @@ export async function uploadContract(file, contractType = '', notes = '') {
 }
 
 /**
+ * Upload a single contract file to the backend using the async route.
+ *
+ * @param {File} file - The contract file selected in the browser.
+ * @param {string} contractType - The type of the contract.
+ * @param {string} notes - Additional notes for the contract.
+ * @returns {Promise<any>} Parsed JSON response from the backend.
+ */
+export async function uploadContractAsync(file, contractType = '', notes = '') {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("No authentication token found");
+  const form = new FormData();
+  form.append("file", file);
+  form.append("contractType", contractType);
+  form.append("notes", notes);
+  const res = await fetch(`${API_BASE_URL}${BASE_PATH}/upload-async`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+    credentials: "include",
+  });
+  if (!res.ok) {
+    let message = "Upload failed";
+    let details = null;
+    try { const data = await res.json(); message = data.error || message; details = data; } catch { const text = await res.text(); message = text || message; }
+    const error = new Error(message); error.status = res.status; if (details) { error.details = details; } throw error;
+  }
+  return res.json();
+}
+
+/**
  * Fetch the list of stored contracts from the backend.
  *
  * This assumes there is a GET /api/contracts route that returns
@@ -95,4 +125,20 @@ export async function deleteCommonContract(id) {
 
 export async function deleteContract(id) {
   return http.del(`${BASE_PATH}/${id}`)
+}
+
+export async function updateContractInfo(id, { title, contractType }) {
+  const token = localStorage.getItem('token')
+  return fetch(`${API_BASE_URL}${BASE_PATH}/${id}/info`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({ title, contractType }),
+    credentials: 'include'
+  }).then(res => {
+    if (!res.ok) throw new Error('Failed to update contract info')
+    return res.json()
+  })
 }

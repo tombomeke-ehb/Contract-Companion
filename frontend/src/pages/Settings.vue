@@ -34,20 +34,36 @@
               <option value="high-contrast">High contrast</option>
             </select>
           </div>
+          <div class="form-group">
+            <label class="label" for="expiryReminderDays">Aantal dagen op voorhand voor contractverval-notificatie</label>
+            <input
+              id="expiryReminderDays"
+              type="number"
+              min="1"
+              max="60"
+              v-model.number="form.expiryReminderDays"
+              class="input"
+              style="max-width: 120px;"
+            />
+          </div>
+          <div class="form-group">
+            <label class="label" for="autoDeleteDays">Aantal dagen na vervaldatum voor automatische verwijdering</label>
+            <input
+              id="autoDeleteDays"
+              type="number"
+              min="1"
+              max="365"
+              v-model.number="form.autoDeleteDays"
+              class="input"
+              style="max-width: 120px;"
+            />
+          </div>
         </form>
       </article>
 
       <article class="card">
         <h2 class="card-title">{{ $t('settings.security') }}</h2>
         <form class="form">
-          <div class="form-group">
-            <label class="label" for="twofactor">{{ $t('settings.twoFactor') }}</label>
-            <select id="twofactor" v-model="form.twoFactor" class="select">
-              <option value="Email">{{ $t('settings.twoFactorEmail') }}</option>
-              <option value="Authenticator">{{ $t('settings.twoFactorApp') }}</option>
-              <option value="Disabled">{{ $t('settings.twoFactorDisabled') }}</option>
-            </select>
-          </div>
           <div class="form-group">
             <label class="label">{{ $t('settings.sessionTimeout') }}</label>
             <select v-model="form.sessionTimeout" class="select">
@@ -61,14 +77,24 @@
     </div>
 
     <article class="card">
-      <h2 class="card-title">{{ $t('settings.notifications') }}</h2>
-      <div class="toggle-row" v-for="(value, key) in notifications" :key="key">
+      <h2 class="card-title">Notificaties</h2>
+      <div class="toggle-row">
         <div>
-          <strong>{{ notificationLabels[key].title }}</strong><br />
-          <span class="card-subtitle">{{ notificationLabels[key].body }}</span>
+          <strong>Risk alerts</strong><br />
+          <span class="card-subtitle">Directe notificatie en e-mail bij high-risk contracten</span>
         </div>
         <label class="switch">
-          <input type="checkbox" v-model="notifications[key]" />
+          <input type="checkbox" v-model="notifications.riskAlerts" />
+          <span class="switch-indicator"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <strong>E-mail bij risk alerts</strong><br />
+          <span class="card-subtitle">Ontvang ook een e-mail bij high-risk contracten</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" v-model="notifications.riskAlertsEmail" />
           <span class="switch-indicator"></span>
         </label>
       </div>
@@ -108,34 +134,25 @@ const userId = computed(() => userStore.user?.id)
 const STORAGE_KEYS = {
   theme: 'cc_theme_v2', // new multi-theme key
   language: 'cc_language',
-  twoFactor: 'cc_twoFactor',
   sessionTimeout: 'cc_sessionTimeout'
 }
 
 const defaultForm = {
   language: 'English',
   theme: 'light',
-  twoFactor: 'Email',
-  sessionTimeout: '30'
+  sessionTimeout: '30',
+  expiryReminderDays: 7,
+  autoDeleteDays: 30 // standaard 30 dagen na vervaldatum
 }
 
 const form = reactive({ ...defaultForm })
 
 const notifications = reactive({
-  productNews: true,
-  weeklyDigest: false,
-  riskAlerts: true
+  riskAlerts: true,
+  riskAlertsEmail: true
 })
 
 const notificationLabels = {
-  productNews: {
-    title: 'Product updates',
-    body: 'Feature launches, roadmap and changelog.'
-  },
-  weeklyDigest: {
-    title: 'Weekly digest',
-    body: 'Summary of analyses and outstanding tasks.'
-  },
   riskAlerts: {
     title: 'Risk alerts',
     body: 'Immediate emails when a high-risk clause is found.'
@@ -178,7 +195,6 @@ function loadFromStorage() {
     // keep Settings storage keys for backwards compatibility
     const storedTheme = localStorage.getItem(STORAGE_KEYS.theme)
     const storedLangCode = localStorage.getItem(STORAGE_KEYS.language)
-    const storedTwoFactor = localStorage.getItem(STORAGE_KEYS.twoFactor)
     const storedSession = localStorage.getItem(STORAGE_KEYS.sessionTimeout)
 
     if (storedTheme && THEME_CLASS_MAP[storedTheme]) {
@@ -186,9 +202,6 @@ function loadFromStorage() {
     }
     if (storedLangCode === 'en' || storedLangCode === 'nl') {
       form.language = mapCodeToUi(storedLangCode)
-    }
-    if (storedTwoFactor) {
-      form.twoFactor = storedTwoFactor
     }
     if (storedSession) {
       form.sessionTimeout = storedSession
@@ -203,7 +216,6 @@ function saveToStorage() {
     // keep Settings storage keys for backwards compatibility
     localStorage.setItem(STORAGE_KEYS.theme, form.theme)
     localStorage.setItem(STORAGE_KEYS.language, mapUiToCode(form.language))
-    localStorage.setItem(STORAGE_KEYS.twoFactor, form.twoFactor)
     localStorage.setItem(STORAGE_KEYS.sessionTimeout, form.sessionTimeout)
 
     // also save theme via shared helper (used by app startup)
@@ -239,13 +251,8 @@ watch(
 onMounted(async () => {
   // step 1: load from localStorage
   loadFromStorage()
-
-  // apply immediately
   applyTheme(form.theme)
   veranderTaal(form.language)
-
-  // step 2: sync with backend preferences; this overwrites only
-  // if backend has something set, otherwise keep current (possibly local) values.
   if (!userId.value) {
     console.warn('Geen geldige gebruiker, sla settings laden over')
     return
@@ -257,26 +264,24 @@ onMounted(async () => {
     })
     if (!response.ok) throw new Error('Failed to load preferences')
     const data = await response.json()
-
     // Map backend fields to frontend
-    if (data.THEME && THEME_CLASS_MAP[data.THEME]) {
-      form.theme = data.THEME
+    if (data.theme && THEME_CLASS_MAP[data.theme]) {
+      form.theme = data.theme
     }
-    if (data.LANG) {
-      form.language = mapCodeToUi(data.LANG)
+    if (data.language) {
+      form.language = mapCodeToUi(data.language)
     }
-    if (data.SESSION_TIMEOUT) {
-      form.sessionTimeout = String(data.SESSION_TIMEOUT)
+    if (data.sessionTimeout !== undefined && data.sessionTimeout !== null) {
+      form.sessionTimeout = String(data.sessionTimeout)
     }
-
-    // Directly update userStore preferences if available
-    if (userStore && userStore.preferences) {
-      userStore.preferences.theme = data.THEME || 'light'
-      userStore.preferences.lang = data.LANG || 'nl'
-      userStore.preferences.region = data.REGION ?? null
-      userStore.preferences.sessionTimeout = data.SESSION_TIMEOUT ?? 30
+    if (data.expiryReminderDays !== undefined && data.expiryReminderDays !== null) {
+      form.expiryReminderDays = Number(data.expiryReminderDays)
     }
-
+    if (data.autoDeleteDays !== undefined && data.autoDeleteDays !== null) {
+      form.autoDeleteDays = Number(data.autoDeleteDays)
+    }
+    if (data.riskAlerts !== undefined) notifications.riskAlerts = !!data.riskAlerts
+    if (data.riskAlertsEmail !== undefined) notifications.riskAlertsEmail = !!data.riskAlertsEmail
     applyTheme(form.theme)
     veranderTaal(form.language)
     saveToStorage()
@@ -289,9 +294,8 @@ const resetSettings = () => {
   // reset to LIGHT + English
   Object.assign(form, defaultForm)
 
-  notifications.productNews = true
-  notifications.weeklyDigest = false
   notifications.riskAlerts = true
+  notifications.riskAlertsEmail = true
 
   status.value = ''
 
@@ -306,8 +310,12 @@ const saveSettings = async () => {
 
   const payload = {
     theme: form.theme,
-    language: mapUiToCode(form.language),
-    sessionTimeout: Number(form.sessionTimeout)
+    lang: mapUiToCode(form.language),
+    sessionTimeout: Number(form.sessionTimeout),
+    expiryReminderDays: Number(form.expiryReminderDays),
+    autoDeleteDays: Number(form.autoDeleteDays),
+    riskAlerts: notifications.riskAlerts ? 1 : 0,
+    riskAlertsEmail: notifications.riskAlertsEmail ? 1 : 0
   }
   console.debug('[Settings] saveSettings payload', payload)
 

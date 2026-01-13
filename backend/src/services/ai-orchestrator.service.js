@@ -21,13 +21,35 @@ async function runGeminiLegal({ prompt }) {
     generationConfig: {
       thinkingConfig: { thinkingLevel: "high" },
       temperature: 1.0,
-      maxOutputTokens: 4096
+      maxOutputTokens: 4096 // Zet maxOutputTokens weer hoger voor maximale output
     },
     tools: [
       { googleSearch: {} }
     ]
   });
-  return response.data.candidates[0].content.parts[0].text;
+  // Defensive: try to find the first string content in the response
+  const candidates = response.data.candidates;
+  if (!candidates || !Array.isArray(candidates) || !candidates[0]) {
+    throw new Error('Gemini API: No candidates in response');
+  }
+  // Try to find a text part in any candidate (robust fallback)
+  let text = null;
+  for (const cand of candidates) {
+    if (cand.content && Array.isArray(cand.content.parts)) {
+      for (const part of cand.content.parts) {
+        if (typeof part.text === 'string' && part.text.trim().length > 0) {
+          text = part.text;
+          break;
+        }
+      }
+    }
+    if (text) break;
+  }
+  if (!text) {
+    // Verwijder debug-log, gooi alleen error
+    throw new Error('Gemini API: No text part in response');
+  }
+  return text;
 }
 
 /**
@@ -42,21 +64,8 @@ async function runGeminiLegal({ prompt }) {
  * @returns {Promise<object>} Final AI result for the frontend
  */
 export async function analyzeContractText(rawText, contractType = '', notes = '') {
-  const language = detectLanguage(rawText);
-  const { maskedText, maskMap } = maskEntities(rawText);
-
-  // Step 1: send masked text + language to LLM1
-  const llm1Result = await runLlm1Structurer({ text: maskedText, language });
-
-  // Alleen relevante data naar Gemini sturen (geen maskMap)
-  const structuredForLlm2 = {
-    normalizedText: llm1Result.normalizedText,
-    language,
-    contractType,
-    notes
-  };
-
-  // Prompt voor Gemini (uitgebreid, duidelijk, alles invullen, geen placeholders)
+  // GEEN truncatie, stuur de volledige tekst naar Gemini
+  // Prompt optimalisatie: dwing alleen JSON af
   const prompt = `You are a legal contract analysis assistant. Given the contract text below, generate a detailed JSON report with the following structure:
 
 {
@@ -91,51 +100,33 @@ export async function analyzeContractText(rawText, contractType = '', notes = ''
 Instructions:
 - Fill in every field, even if empty (use empty string, 0, or [] as appropriate).
 - Do NOT use placeholders like [PARTY_1], [DATUM], [OPTIONEEL], [VOLGT], etc. Only use real values from the contract.
-- Only return valid JSON. No explanation, no markdown, no extra text before or after the JSON.
+- Only return valid JSON. No explanation, no markdown, no extra text before or after the JSON. Do not add any plain text, comments, or explanations before or after the JSON. The output must be strictly valid JSON only.
 - If a clause is not present, set "present": false and leave other fields empty.
 - Be as complete and detailed as possible, but keep the output strictly valid JSON.
+- If the contract text is empty or missing, return a JSON object with a field "error": "No contract text provided" and do not generate a sample analysis.
 
 Contract text:
-${llm1Result.normalizedText}
+${rawText}
 `;
 
-  // Gemini API call
   const resultText = await runGeminiLegal({ prompt });
   let llm2Result;
   try {
-    const start = resultText.indexOf("{");
-    const end = resultText.lastIndexOf("}");
-    llm2Result = JSON.parse(resultText.slice(start, end + 1));
+    // Probeer direct te parsen
+    llm2Result = JSON.parse(resultText);
   } catch (e) {
-    llm2Result = {
-      title: "Contract analysis",
-      contractType: "Contract",
-      analyzedAt: new Date().toISOString(),
-      overallRiskScore: 5.0,
-      overallRisk: "medium",
-      overallRiskLabel: "Medium risk",
-      humanSummary: "",
-      keySummary: "",
-      executiveSummary: "",
-      focusTags: [],
-      keyFindings: [],
-      clauseBreakdown: {
-        highRiskClauses: 0,
-        mediumRiskClauses: 0,
-        lowRiskClauses: 0,
-      },
-      clauses: {},
-      recommendedActions: [],
-    };
+    // Fallback: probeer alleen het JSON-gedeelte te extraheren
+    try {
+      const start = resultText.indexOf('{');
+      const end = resultText.lastIndexOf('}');
+      if (start !== -1 && end !== -1 && end > start) {
+        llm2Result = JSON.parse(resultText.slice(start, end + 1));
+      } else {
+        throw new Error('No JSON object found in Gemini response');
+      }
+    } catch (fallbackErr) {
+      throw new Error('Gemini JSON parse error');
+    }
   }
-
-  // Mapping stap: zet het LLM2-resultaat om naar frontend rapport shape
-  const report = mapLlm2ToReport(llm2Result);
-
-  return {
-    language,
-    maskMap,
-    llm1: llm1Result,
-    llm2: report,
-  };
+  return llm2Result;
 }

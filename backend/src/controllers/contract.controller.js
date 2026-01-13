@@ -2,13 +2,14 @@
 
 import fs from "fs/promises";
 import { processContractPdf } from "../services/documentOCR.service.js";
-import { createDocumentWithSummary, listUserContracts, getContractWithSummary, deleteContractById } from "../services/contract.service.js";
+import { createDocumentWithSummary, listUserContracts, getContractWithSummary, deleteContractById, createDocumentWithPendingStatus } from "../services/contract.service.js";
 import { analyzeContractText } from "../services/ai-orchestrator.service.js";
 import { mapLlm2ToReport } from "../services/report-mapper.service.js";
 import * as commonContractService from "../services/commonContract.service.js";
+import app from '../app.js';
 
 // Upload + OCR + AI analyse (ingelogde users)
-export async function analyzeContract(req, res) {
+export async function analyzeContract(req, res, next) {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -19,31 +20,58 @@ export async function analyzeContract(req, res) {
 
     const filePath = req.file.path;
 
+    // DEBUG: Log file info
+    console.log('[analyzeContract] filePath:', filePath, 'originalname:', req.file.originalname, 'mimetype:', req.file.mimetype);
+
     // OCR execute
     const document = await processContractPdf(filePath);
     const fullText = document.text || "";
 
+    // DEBUG: Log OCR result length
+    console.log('[analyzeContract] OCR text length:', fullText.length);
+
     // Uploaded bestand opruimen - we bewaren enkel de tekst/AI-resultaten
     try {
       await fs.unlink(filePath);
-    } catch (e) {
-      console.warn("Could not delete uploaded file", e);
-    }
+    } catch (e) {}
 
     const contractType = req.body?.contractType || "";
     const notes = req.body?.notes || "";
 
+    // DEBUG: Log contractType and notes
+    console.log('[analyzeContract] contractType:', contractType, 'notes:', notes);
+
     // 2. Run new two-stage AI pipeline on the OCR text, passing contractType and notes
     const aiResult = await analyzeContractText(fullText, contractType, notes);
 
+    // DEBUG: Log AI result keys
+    console.log('[analyzeContract] aiResult keys:', Object.keys(aiResult));
+
     // 3. Extract risk score from LLM2 for persistence
-    // Haal riskScore uit report als fallback
-    const report = mapLlm2ToReport(aiResult.llm2);
-    const riskScore = report.riskScore ?? aiResult?.llm2?.riskScore ?? aiResult?.llm2?.overallRiskScore;
+    // Defensive: report kan null zijn
+    let report = null;
+    try {
+      report = mapLlm2ToReport(aiResult.llm2);
+    } catch (e) {
+      report = {};
+    }
+    const riskScore = (report && typeof report.riskScore !== 'undefined' && report.riskScore !== null)
+      ? report.riskScore
+      : (aiResult?.llm2?.riskScore ?? aiResult?.llm2?.overallRiskScore ?? 0);
+
+    // DEBUG: Log report and riskScore
+    console.log('[analyzeContract] report:', report, 'riskScore:', riskScore);
 
     // Use the JWT payload field "id" for the current user
     const userId = req.user?.id || null;
-    const docType = Number(contractType) || 1; // Ensure docType is a number
+    // Als contractType leeg is, gebruik AI type, anders user input
+    let docType = contractType && contractType.trim() ? contractType.trim() : (report.contractType || aiResult.llm2?.contractType || 'Unknown');
+
+    // Validate docType (contractType): only allow safe characters, max length 100
+    if (typeof docType !== 'string' || !/^[\w\s\-\/&()\.]{2,100}$/i.test(docType)) {
+      return res.status(400).json({ error: 'Invalid contract type. Only letters, numbers, spaces, and basic punctuation allowed.' });
+    }
+
     const title = req.file.originalname || "Uploaded contract";
     const description = notes;
 
@@ -58,6 +86,11 @@ export async function analyzeContract(req, res) {
       analysisJson: JSON.stringify(aiResult.llm2)
     });
 
+    // Notify all SSE clients that a contract analysis is finished
+    if (typeof app.broadcastContractAnalyzed === 'function') {
+      app.broadcastContractAnalyzed(docId);
+    }
+
     // 5. Respond to the frontend with all building blocks
     res.json({
       success: true,
@@ -67,10 +100,32 @@ export async function analyzeContract(req, res) {
       report,
     });
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      error: "Analysis failed"
-    });
+    console.error('[analyzeContract] ERROR:', err);
+    next(err);
+  }
+}
+
+// Nieuwe asynchrone upload endpoint
+export async function uploadContractAsync(req, res, next) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: "No file uploaded" });
+    }
+    const filePath = req.file.path;
+    const document = await processContractPdf(filePath);
+    const fullText = document.text || "";
+    try { await fs.unlink(filePath); } catch {}
+    const contractType = req.body?.contractType || "";
+    const notes = req.body?.notes || "";
+    const userId = req.user?.id || null;
+    let docType = contractType && contractType.trim() ? contractType.trim() : 'Unknown';
+    const title = req.file.originalname || "Uploaded contract";
+    const description = notes;
+    // Alleen DOCUMENTEN aanmaken, geen analyse
+    const { docId } = await createDocumentWithPendingStatus({ userId, docType, title, description, fullText });
+    res.json({ success: true, docId });
+  } catch (err) {
+    next(err);
   }
 }
 
@@ -129,6 +184,42 @@ export async function deleteContract(req, res) {
     res.json({ success: true, removed: { id: numericId } });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete contract' });
+  }
+}
+
+// Update contract title and type
+export async function updateContractInfo(req, res) {
+  try {
+    const { id } = req.params;
+    const { title, contractType } = req.body;
+    if (!req.user) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    if (!id || !title || !contractType) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+    // Only allow update if user owns contract or is admin
+    // (Assume DOCUMENTEN table has ID_USER)
+    const userId = req.user.id;
+    const isAdmin = !!req.user.isAdmin;
+    // Update query
+    const sql = isAdmin
+      ? `UPDATE DOCUMENTEN SET TITEL = :title, DOC_TYPE = :contractType WHERE ID_DOC = :id`
+      : `UPDATE DOCUMENTEN SET TITEL = :title, DOC_TYPE = :contractType WHERE ID_DOC = :id AND ID_USER = :userId`;
+    const binds = isAdmin
+      ? { id, title, contractType }
+      : { id, title, contractType, userId };
+    // Ensure contractType is a string for VARCHAR2
+    if (typeof binds.contractType !== 'string') {
+      binds.contractType = String(binds.contractType)
+    }
+    const result = await query(sql, binds, { autoCommit: true });
+    if (result.rowsAffected === 0) {
+      return res.status(403).json({ error: "Not allowed or contract not found" });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update contract info" });
   }
 }
 

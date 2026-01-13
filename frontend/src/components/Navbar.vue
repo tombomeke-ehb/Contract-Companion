@@ -105,8 +105,9 @@
               <li
                 v-for="toast in inboxList"
                 :key="toast.id"
-                class="notification-item"
+                :class="['notification-item', toast.variant, { unread: !toast.read }]"
               >
+                <span class="notification-item__accent"></span>
                 <button
                   type="button"
                   class="notification-item__button"
@@ -114,6 +115,15 @@
                 >
                   <div class="notification-item__title">{{ toast.title }}</div>
                   <div v-if="toast.message" class="notification-item__body">{{ toast.message }}</div>
+                </button>
+                <button
+                  class="notification-item__close"
+                  type="button"
+                  aria-label="Mark as read"
+                  @click.stop="notifications.dismiss(toast.id)"
+                  title="Mark as read"
+                >
+                  ×
                 </button>
               </li>
             </ul>

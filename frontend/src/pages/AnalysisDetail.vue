@@ -2,14 +2,42 @@
   <section class="container" v-if="normalizedReport">
     <header class="card analysis-header" style="margin-bottom:2rem;">
       <div>
-        <p class="page-eyebrow">{{ report.contractType }} contract</p>
-        <h1 class="section-title">{{ report.title }}</h1>
+        <p class="page-eyebrow">
+          <template v-if="!editMode">
+            {{ normalizedReport.contractType }} contract
+          </template>
+          <template v-else>
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <select v-if="!customTypeMode" v-model="editContractType" class="input contract-type-select" style="min-width:160px; max-width:220px;">
+                <option v-for="type in contractTypes" :key="type" :value="type">{{ type }}</option>
+                <option value="__custom__">Anders...</option>
+              </select>
+              <input v-else v-model="editContractType" class="input contract-type-input" style="min-width:160px; max-width:220px;" placeholder="Eigen type invullen..." />
+              <button v-if="!customTypeMode && editContractType === '__custom__'" class="btn btn-outline" style="margin-left:0.5rem;" @click="customTypeMode = true; editContractType = aiSuggestedType || ''">Zelf invullen</button>
+              <button v-if="customTypeMode" class="btn btn-outline" style="margin-left:0.5rem;" @click="customTypeMode = false; editContractType = contractTypes[0]">Annuleer</button>
+              <span v-if="aiSuggestedType && customTypeMode" class="card-subtitle" style="margin-left:0.5rem; color:#888; font-size:0.95em;">AI suggestie: {{ aiSuggestedType }}</span>
+            </div>
+          </template>
+        </p>
+        <h1 class="section-title">
+          <template v-if="!editMode">
+            {{ normalizedReport.title }}
+          </template>
+          <template v-else>
+            <input v-model="editTitle" class="input" style="font-size:1.5rem; max-width:400px;" />
+          </template>
+        </h1>
         <div style="display:flex; gap:1.5rem; align-items:center; margin:1.5rem 0 0.5rem 0;">
           <!-- Risk score circle component -->
-          <RiskScoreCircle :score="report.riskScore" :color="getRiskScoreColor(report.riskScore)" />
-          <span class="badge" :class="riskBadgeClass">{{ report.riskLabel }}</span>
-          <span class="card-subtitle">Analyzed on {{ report.date }}</span>
+          <RiskScoreCircle :score="normalizedReport.riskScore" :color="getRiskScoreColor(normalizedReport.riskScore)" />
+          <span class="badge" :class="riskBadgeClass">{{ normalizedReport.riskLabel }}</span>
+          <span class="card-subtitle">Analyzed on {{ normalizedReport.date }}</span>
           <a class="btn btn-outline" href="javascript:void(0)">Download report</a>
+        </div>
+        <div style="margin-top:1rem;">
+          <button v-if="!editMode" class="btn btn-outline" @click="editMode = true">Edit contract info</button>
+          <button v-else class="btn btn-primary" @click="saveContractInfo">Save</button>
+          <button v-if="editMode" class="btn btn-outline" @click="cancelEdit">Cancel</button>
         </div>
       </div>
     </header>
@@ -169,7 +197,9 @@ import RiskScoreCircle from '../components/RiskScoreCircle.vue'
 import { buildGoogleCalendarUrl, downloadIcsClient } from '../utils/calendar'
 import { downloadServerIcs as downloadServerIcsApi } from '../api/calendar'
 import { useContractStore } from '../stores/contractStore'
-import { getContractById } from '../api/contracts'
+import { getContractById, updateContractInfo } from '../api/contracts'
+import { useNotificationStore } from '../stores/notificationStore'
+import { getCommonContractReport } from '../api/commonContracts'
 
 /**
  * Get color for risk score circle based on score value
@@ -182,6 +212,62 @@ function getRiskScoreColor(score) {
   if (score < 6) return '#f97316' // orange
   return '#ef4444' // red
 }
+
+const route = useRoute()
+const contractStore = useContractStore()
+const notificationStore = useNotificationStore()
+
+// Calendar/reminder feature refs (verwijder dubbele definities!)
+const contractStartDate = ref('')
+const contractEndDate = ref('')
+const dateSaveSuccess = ref('')
+const dateSaveError = ref('')
+const eventDate = ref('')
+const durationMinutes = ref(60)
+const calendarError = ref('')
+const calendarSuccess = ref('')
+const downloading = ref(false)
+
+// Prepare event payload for calendar links and ICS files
+const eventPayload = computed(() => {
+  if (!eventDate.value) return null
+  const start = new Date(eventDate.value)
+  if (Number.isNaN(start.getTime())) return null
+  const durationMs = Math.max(15, Number(durationMinutes.value) || 60) * 60 * 1000
+  const end = new Date(start.getTime() + durationMs)
+  if (!normalizedReport.value) return null
+  return {
+    title: `${normalizedReport.value.title} review`,
+    description: normalizedReport.value.summary || normalizedReport.value.keySummary,
+    location: '',
+    start: start.toISOString(),
+    end: end.toISOString(),
+  }
+})
+
+const googleLink = computed(() => {
+  if (!eventPayload.value) return ''
+  // Google Calendar expects: YYYYMMDDTHHmmssZ
+  function toGoogleDate(dt) {
+    if (!dt) return ''
+    const pad = (n) => String(n).padStart(2, '0')
+    return (
+      dt.getUTCFullYear() +
+      pad(dt.getUTCMonth() + 1) +
+      pad(dt.getUTCDate()) + 'T' +
+      pad(dt.getUTCHours()) +
+      pad(dt.getUTCMinutes()) +
+      pad(dt.getUTCSeconds()) + 'Z'
+    )
+  }
+  const start = new Date(eventPayload.value.start)
+  const end = new Date(eventPayload.value.end)
+  const title = encodeURIComponent(eventPayload.value.title || 'Contract Reminder')
+  const details = encodeURIComponent(eventPayload.value.description || '')
+  const location = ''
+  const dates = `${toGoogleDate(start)}/${toGoogleDate(end)}`
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&location=${location}`
+})
 
 // Demo reports used only for the "Common contracts" examples
 const reports = {
@@ -516,42 +602,37 @@ const reports = {
   }
 }
 
-const route = useRoute()
-const contractStore = useContractStore()
-
-const loading = ref(false)
-const loadError = ref('')
-const currentReport = ref(null)
-
-// Contract date fields and messages
-const contractStartDate = ref('')
-const contractEndDate = ref('')
-const dateSaveSuccess = ref('')
-const dateSaveError = ref('')
-
 const routeId = computed(() => String(route.params.id || ''))
 const isCommonPage = computed(() => String(route.query?.from || '') === 'common')
 
 // Active report: backend data when available, otherwise demo for common contracts
 const report = computed(() => {
   if (isCommonPage.value) {
-    return reports[routeId.value || '1']
+    return currentReport.value
   }
   return currentReport.value
 })
 
+const loading = ref(false)
+const loadError = ref('')
+const currentReport = ref(null)
+
 async function loadReport() {
   loadError.value = ''
-
-  // For common/demo reports we just use the local dataset
-  if (isCommonPage.value) {
-    currentReport.value = null
-    return
-  }
-
   const id = routeId.value
-  if (!id) {
-    loadError.value = 'No report id provided.'
+  if (isCommonPage.value) {
+    try {
+      const report = await getCommonContractReport(id)
+      if (!report) {
+        loadError.value = 'Report not found.'
+        currentReport.value = null
+        return
+      }
+      currentReport.value = report
+    } catch (e) {
+      loadError.value = e?.message || 'Failed to load report.'
+      currentReport.value = null
+    }
     return
   }
 
@@ -614,41 +695,20 @@ watch([routeId, isCommonPage], loadReport)
 
 // Normalize the active report shape (backend/store/demo) for the template
 const normalizedReport = computed(() => {
-  const r = report.value
-  if (!r) return null
-
-  if (
-    typeof r.riskScore === 'number' &&
-    r.breakdown && Object.keys(r.breakdown).length > 0 &&
-    Array.isArray(r.actions) && r.actions.length > 0
-  ) {
-    let risk = r.risk
-    if (!risk && r.riskLabel) {
-      const label = r.riskLabel.toLowerCase()
-      if (label.includes('high')) risk = 'high'
-      else if (label.includes('medium')) risk = 'medium'
-      else if (label.includes('low')) risk = 'low'
-      else risk = 'medium'
-    }
-    return { ...r, risk }
-  }
-
-  let risk = r.risk
-  if (!risk && r.riskLabel) {
-    const label = r.riskLabel.toLowerCase()
-    if (label.includes('high')) risk = 'high'
-    else if (label.includes('medium')) risk = 'medium'
-    else if (label.includes('low')) risk = 'low'
-    else risk = 'medium'
-  }
-
-  return {
-    title: r.title || 'Contract',
-    contractType: r.contractType || 'Contract',
+  const id = route.params.id
+  // Try to load edited info from localStorage
+  const editedInfo = JSON.parse(localStorage.getItem(`contract_info_${id}`) || '{}')
+  // Use currentReport if available, else fallback to store/demo
+  const r = currentReport.value || contractStore.getReportById(id) || reports[id] || {}
+  const risk = r.risk || (r.riskLabel ? r.riskLabel.toLowerCase().includes('high') ? 'high' : r.riskLabel.toLowerCase().includes('medium') ? 'medium' : 'low' : 'low')
+  const riskLabel = r.riskLabel || (risk === 'high' ? 'High risk' : risk === 'medium' ? 'Medium risk' : 'Low risk')
+  const normalized = {
+    title: editedInfo.title || r.title || 'Contract',
+    contractType: editedInfo.contractType || r.contractType || 'Contract',
     date: r.date || r.uploadedAt || '',
     riskScore: typeof r.riskScore === 'number' ? r.riskScore : 0,
     risk,
-    riskLabel: r.riskLabel || 'Medium risk',
+    riskLabel,
     keySummary: r.keySummary || '',
     humanSummary: r.humanSummary || r.description || '',
     keyFindings: r.keyFindings || [],
@@ -658,13 +718,8 @@ const normalizedReport = computed(() => {
     actions: r.actions || [],
     clauses: r.clauses || {},
   }
+  return normalized
 })
-
-const eventDate = ref('')
-const durationMinutes = ref(60)
-const calendarError = ref('')
-const calendarSuccess = ref('')
-const downloading = ref(false)
 
 // Keep reminder date in sync with contract end date by default
 watch(
@@ -710,28 +765,6 @@ function saveContractDates() {
   }
 }
 
-// Prepare event payload for calendar links and ICS files
-const eventPayload = computed(() => {
-  if (!eventDate.value) return null
-  const start = new Date(eventDate.value)
-  if (Number.isNaN(start.getTime())) return null
-  const durationMs = Math.max(15, Number(durationMinutes.value) || 60) * 60 * 1000
-  const end = new Date(start.getTime() + durationMs)
-  if (!normalizedReport.value) return null
-  return {
-    title: `${normalizedReport.value.title} review`,
-    description: normalizedReport.value.summary || normalizedReport.value.keySummary,
-    location: '',
-    start: start.toISOString(),
-    end: end.toISOString(),
-  }
-})
-
-const googleLink = computed(() => {
-  if (!eventPayload.value) return ''
-  return buildGoogleCalendarUrl(eventPayload.value)
-})
-
 // Download ICS file on client side
 function downloadClientIcs() {
   calendarError.value = ''
@@ -770,4 +803,149 @@ const riskBadgeClass = computed(() => {
   if (normalizedReport.value.risk === 'medium') return 'badge-medium'
   return 'badge-low'
 })
+
+// Notificatie: contract verloopt bijna (binnen 7 dagen)
+watch(
+  () => contractEndDate.value,
+  (val) => {
+    if (val) {
+      const end = new Date(val)
+      const now = new Date()
+      const soon = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+      if (end > now && end <= soon) {
+        notificationStore.push({
+          title: 'Contract loopt bijna af',
+          message: `${normalizedReport.value?.title || 'Contract'} verloopt op ${end.toLocaleDateString()}`,
+          variant: 'warning',
+          isContractExpiry: true
+        })
+      }
+    }
+  },
+  { immediate: true }
+)
+
+const editMode = ref(false)
+const editTitle = ref('')
+const editContractType = ref('')
+const customTypeMode = ref(false)
+const contractTypes = [
+  'Employment', 'Confidentiality', 'Lease', 'Service', 'Consulting', 'Partnership', 'NDA', 'Other'
+]
+
+const aiSuggestedType = computed(() => {
+  // Toon AI suggestie als die beschikbaar is
+  return normalizedReport.value?.aiTitle || normalizedReport.value?.contractType || ''
+})
+
+watch(
+  () => normalizedReport.value,
+  (val) => {
+    if (val) {
+      editTitle.value = val.title || ''
+      editContractType.value = val.contractType || contractTypes[0]
+    }
+  },
+  { immediate: true }
+)
+
+function validateContractType(type) {
+  // Only allow letters, numbers, spaces, and -/&()., min 2, max 100
+  return typeof type === 'string' && /^[\w\s\-\/&()\.]{2,100}$/i.test(type)
+}
+function validateTitle(title) {
+  // Only allow letters, numbers, spaces, and basic punctuation, min 2, max 120
+  return typeof title === 'string' && /^[\w\s\-\/&()\.\,\'\"]{2,120}$/i.test(title)
+}
+
+function saveContractInfo() {
+  // Frontend validation
+  let contractTypeToSend = editContractType.value
+  if (contractTypeToSend === "I'm not sure (let AI choose)") {
+    contractTypeToSend = '' // Let backend/AI choose
+  }
+  if (!validateTitle(editTitle.value)) {
+    notificationStore.push({
+      title: 'Ongeldige titel',
+      message: 'Titel mag alleen letters, cijfers, spaties en enkele leestekens bevatten (2-120 tekens).',
+      variant: 'danger'
+    })
+    return
+  }
+  if (contractTypeToSend && !validateContractType(contractTypeToSend)) {
+    notificationStore.push({
+      title: 'Ongeldig contracttype',
+      message: 'Type mag alleen letters, cijfers, spaties en -/&(). bevatten (2-100 tekens).',
+      variant: 'danger'
+    })
+    return
+  }
+  const id = route.params.id
+  updateContractInfo(id, {
+    title: editTitle.value,
+    contractType: contractTypeToSend
+  })
+    .then(() => {
+      // Optionally update localStorage for instant UI
+      const contractData = JSON.parse(localStorage.getItem(`contract_info_${id}`) || '{}')
+      contractData.title = editTitle.value
+      contractData.contractType = contractTypeToSend
+      localStorage.setItem(`contract_info_${id}` , JSON.stringify(contractData))
+      editMode.value = false
+      notificationStore.push({
+        title: 'Contract info bijgewerkt',
+        message: `Titel en type succesvol opgeslagen`,
+        variant: 'success'
+      })
+    })
+    .catch((err) => {
+      notificationStore.push({
+        title: 'Update mislukt',
+        message: err?.message || 'Kon contract info niet opslaan op de server',
+        variant: 'danger'
+      })
+    })
+}
+function cancelEdit() {
+  editMode.value = false
+  // Reset to last saved
+  const id = route.params.id
+  const contractData = JSON.parse(localStorage.getItem(`contract_info_${id}`) || '{}')
+  editTitle.value = contractData.title || normalizedReport.value.title
+  editContractType.value = contractData.contractType || normalizedReport.value.contractType
+}
 </script>
+
+<style scoped>
+.analysis-header {
+  background: var(--card-bg, #fff);
+  border-radius: 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  padding: 2rem 2.5rem 2rem 2rem;
+  margin-bottom: 2rem;
+}
+.contract-type-select, .contract-type-input {
+  font-size: 1rem;
+  padding: 0.4em 1em 0.4em 0.7em;
+  border-radius: 0.5em;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  color: #222;
+  transition: border 0.2s;
+  margin-right: 0.5em;
+}
+.contract-type-select:focus, .contract-type-input:focus {
+  border-color: #6366f1;
+  outline: none;
+}
+.btn-outline {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #222;
+  transition: border 0.2s, background 0.2s;
+}
+.btn-outline:hover {
+  border-color: #6366f1;
+  background: #f3f4f6;
+}
+</style>

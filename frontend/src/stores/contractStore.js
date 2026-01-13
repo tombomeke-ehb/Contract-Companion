@@ -15,5 +15,8 @@ export const useContractStore = defineStore('contracts', {
     setCurrentReport(report) {
       this.currentReport = report;
     },
+    getReportById(id) {
+      return this.contracts.find(c => String(c.id) === String(id)) || null;
+    },
   }
 });
