@@ -1,50 +1,114 @@
 // backend/src/routes/contract.routes.js
 
-import express from 'express'
-import { upload } from '../middleware/upload.js'
-import { processContractPdf } from '../services/documentOCR.service.js'
-import { analyzeContract, getContracts } from '../controllers/contract.controller.js'
+import express from "express";
+import { upload } from "../middleware/upload.js";
+import { authenticate, isAdmin } from "../middleware/auth.js";
+import { processContractPdf } from "../services/documentOCR.service.js";
+import {
+  analyzeContract,
+  getContracts,
+  getContractDetail,
+  getCommonContracts,
+  createCommonContract,
+  updateCommonContract,
+  deleteCommonContract,
+  deleteContract,
+  updateContractInfo,
+  uploadContractAsync
+} from "../controllers/contract.controller.js";
 
-const router = express.Router()
+const router = express.Router();
 
-// Existing low-level OCR endpoint (kept for now)
-router.post('/upload-raw', upload.single('file'), async (req, res) => {
-  try {
-    console.log('[contracts] /upload-raw called, file:', req.file?.originalname)
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' })
+// Wrapper around Multer to translate upload/validation errors
+// into clean JSON responses for the frontend.
+const uploadWithValidation = (req, res, next) => {
+  const uploader = upload.single("file");
+
+  uploader(req, res, (err) => {
+    if (err) {
+      if (err.message === "UNSUPPORTED_FILE_TYPE") {
+        return res.status(400).json({
+          success: false,
+          error: "Only PDF, DOC, DOCX or TXT files are allowed.",
+        });
+      }
+
+      console.error("Upload error:", err);
+      return res.status(400).json({
+        success: false,
+        error: "Failed to upload file.",
+      });
     }
 
-    const filePath = req.file.path
-    const document = await processContractPdf(filePath)
+    next();
+  });
+};
 
-    const fullText = document.text || ''
+// Public routes
+// Common contracts library - for everyone to view
+router.get("/common", getCommonContracts);
 
+// Secured routes -- all routes below require authentication
+router.use(authenticate);
+
+// Upload + analyse of a contract (user + admin)
+router.post("/upload", uploadWithValidation, analyzeContract);
+
+// Nieuwe async upload route
+router.post("/upload-async", uploadWithValidation, uploadContractAsync);
+
+// Low-level OCR endpoint, useful for debugging / tools
+router.post("/upload-raw", uploadWithValidation, async (req, res) => {
+  try {
+    console.log("[contracts] /upload-raw called, file:", req.file?.originalname);
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const filePath = req.file.path;
+    const document = await processContractPdf(filePath);
+
+    const fullText = document.text || "";
+    //Page details
     const pages = (document.pages || []).map((p, index) => ({
       pageNumber: index + 1,
       width: p.dimension?.width,
       height: p.dimension?.height,
       numParagraphs: (p.paragraphs || []).length,
-      numTables: (p.tables || []).length
-    }))
+      numTables: (p.tables || []).length,
+    }));
 
     return res.json({
       success: true,
       fullText,
-      pages
-    })
+      pages,
+    });
   } catch (err) {
-    console.error('Error processing document:', err)
+    console.error("Error processing document:", err);
     return res.status(500).json({
       success: false,
-      error: 'Failed to process document',
-      details: err.message
-    })
+      error: "Failed to process document",
+      details: err.message,
+    });
   }
-})
+});
 
-// High-level API used by the frontend
-router.post('/upload', upload.single('file'), analyzeContract)
-router.get('/', getContracts)
+// List of contracts
+// admin sees all, user only their own
+router.get("/", getContracts);
 
-export default router
+// Detail van één contract (voor later detailweergave / debug)
+router.get("/:id", getContractDetail);
+
+// Verwijder contract (user + admin)
+router.delete("/:id", deleteContract);
+
+// Update contract info (title and type)
+router.put("/:id/info", updateContractInfo);
+
+// Admin-manageable "common contracts" library (admin only voor beheer)
+router.post("/common", isAdmin, createCommonContract);
+router.put("/common/:id", isAdmin, updateCommonContract);
+router.delete("/common/:id", isAdmin, deleteCommonContract);
+
+export default router;

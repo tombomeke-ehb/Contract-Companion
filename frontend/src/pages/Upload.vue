@@ -36,6 +36,15 @@
           <p class="upload-zone__hint">
             {{ fileName || $t('upload.fileHint') }}
           </p>
+          <p v-if="fileName" class="upload-zone__hint">
+            <button
+              type="button"
+              @click.stop="clearFile"
+              style="background:none;border:none;padding:0;color:var(--danger);text-decoration:underline;cursor:pointer;font:inherit;"
+            >
+              Remove selected file
+            </button>
+          </p>
         </div>
         <button class="btn btn-outline" type="button" @click.stop="triggerFileInput">
           {{ $t('upload.browseFiles') }}
@@ -132,9 +141,13 @@
 <script setup>
 import { reactive, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { uploadContract } from '../api/contracts'
+import { uploadContractAsync } from '../api/contracts'
+import { useContractStore } from '../stores/contractStore'
+import { useNotificationStore } from '../stores/notificationStore'
 
 const router = useRouter()
+const contractStore = useContractStore()
+const notificationStore = useNotificationStore()
 const fileInput = ref(null)
 const selectedFile = ref(null)
 const isDragging = ref(false)
@@ -148,7 +161,9 @@ const form = reactive({
   notes: ''
 })
 
-const contractTypes = ['Employment', 'Freelance', 'NDA', 'Lease', 'Subscription']
+const contractTypes = [
+  'Employment', 'Freelance', 'NDA', 'Lease', 'Subscription', "I'm not sure (let AI choose)"
+]
 
 const steps = [
   {
@@ -233,15 +248,19 @@ const handleDragLeave = (event) => {
   isDragging.value = false
 }
 
-const resetForm = () => {
+const clearFile = () => {
   selectedFile.value = null
-  form.contractType = ''
-  form.notes = ''
-  status.value = ''
-  error.value = ''
   if (fileInput.value) {
     fileInput.value.value = ''
   }
+  status.value = ''
+  error.value = ''
+}
+
+const resetForm = () => {
+  clearFile()
+  form.contractType = ''
+  form.notes = ''
 }
 
 // Accessibility: loader overlay is shown when isUploading is true
@@ -251,27 +270,49 @@ const handleSubmit = async () => {
     return
   }
 
-  if (!form.contractType) {
+  if (!form.contractType && form.contractType !== "I'm not sure (let AI choose)") {
     error.value = 'Choose a contract type so we can tune the analysis.'
     return
   }
 
   error.value = ''
   isUploading.value = true
-  status.value = 'Uploading and analysing your contract...'
+  status.value = 'Uploading contract...'
+
+  let contractTypeToSend = form.contractType
+  if (contractTypeToSend === "I'm not sure (let AI choose)") {
+    contractTypeToSend = ''
+  }
 
   try {
-    await uploadContract(selectedFile.value)
-    status.value = 'Upload successful. Generating your AI report...'
+    // Gebruik de async upload
+    await uploadContractAsync(selectedFile.value, contractTypeToSend, form.notes)
+    status.value = 'Upload succesvol. Je ontvangt een notificatie zodra de analyse klaar is.'
+    notificationStore.push({
+      title: 'Contract geüpload',
+      message: 'Je contract wordt nu geanalyseerd. Je krijgt een notificatie zodra het rapport klaar is.',
+      variant: 'info',
+      timeout: 6000
+    })
+    await new Promise((resolve) => setTimeout(resolve, 1200))
+    router.push({ name: 'dashboard' })
   } catch (err) {
     console.warn(err)
+    const message = err?.message || ''
+    if (
+      err?.status === 400 &&
+      message.toLowerCase().includes('only pdf')
+    ) {
+      error.value = 'We only accept PDF, DOC, DOCX or TXT files.'
+      status.value = ''
+      isUploading.value = false
+      return
+    }
     status.value =
       'Cannot reach the backend right now, so we will show a demo report instead.'
+    error.value = 'Upload or analysis failed. Please try again.'
   } finally {
     isUploading.value = false
   }
-
-  await new Promise((resolve) => setTimeout(resolve, 600))
-  router.push({ name: 'report-detail', params: { id: 1 } })
 }
 </script>

@@ -2,18 +2,22 @@
   "name": "contract-companion",
   "private": true,
   "scripts": {
-    "install:backend": "npm install express cors multer dotenv --prefix backend && npm install @google-cloud/documentai --prefix backend && npm install --save-dev nodemon --prefix backend",
-    "install:frontend": "npm install axios vue-i18n --prefix frontend",
+    "install:backend": "npm install express cors multer dotenv jsonwebtoken mkcert selfsigned nodemailer pinia vue vue-router vue-i18n axios @google-cloud/documentai bcryptjs --prefix backend && npm install --save-dev nodemon --prefix backend",
+    "install:frontend": "npm install axios vue-i18n vue@next vue-router@4 pinia@latest --prefix frontend",
     "install:all": "npm run install:backend && npm run install:frontend",
-    "start:all": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\""
+    "start:all": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\" \"npm run worker --prefix backend\""
   },
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "mkcert": "^3.2.0",
+    "selfsigned": "^5.2.0"
   },
   "dependencies": {
     "@google-cloud/documentai": "^9.5.0",
+    "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.3",
+    "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2"
   }
 }

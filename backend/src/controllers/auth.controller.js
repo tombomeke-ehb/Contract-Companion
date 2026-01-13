@@ -1,15 +1,21 @@
 import bcrypt from "bcryptjs";
 import { findUserByEmail, createUser } from "../services/user.service.js";
+import jwt from "jsonwebtoken";
 
 // REGISTER
 export async function registerUser(req, res) {
   try {
-    console.log("REQ BODY =", req.body);
-
-    const { name, surname, email, password } = req.body;
+    // Ne pas logger le mot de passe en clair ni les données sensibles
+    const { name, surname, email, password } = req.body || {};
 
     if (!name || !surname || !email || !password) {
       return res.status(400).json({ error: "Please fill in all fields (including last name)." });
+    }
+
+    // Basic password policy: minimum 8 characters
+    const pwdOk = typeof password === "string" && password.length >= 8;
+    if (!pwdOk) {
+      return res.status(400).json({ error: "Password must be at least 8 characters." });
     }
 
     // Check if user already exists
@@ -21,10 +27,48 @@ export async function registerUser(req, res) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user (surname is required)
-    await createUser(name, email, hashedPassword, surname);
+    // Create user (surname is required) and get basic info back (including new ID)
+    const createdUser = await createUser(name, email, hashedPassword, surname);
 
-    return res.status(201).json({ message: "Account created." });
+    // If JWT secret is missing, we still confirm account creation
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.warn("JWT_SECRET is not defined. Returning response without token.");
+      return res.status(201).json({
+        message: "Account created. Please log in.",
+        user: {
+          id: createdUser.id,
+          name: createdUser.name,
+          surname: createdUser.surname,
+          email: createdUser.email,
+          isAdmin: createdUser.isAdmin === 1,
+        },
+      });
+    }
+
+    // Create JWT token for auto-login
+    const token = jwt.sign(
+      {
+        id: createdUser.id,
+        email: createdUser.email,
+        isAdmin: createdUser.isAdmin === 1,
+      },
+      jwtSecret,
+      { expiresIn: "2h" }
+    );
+
+    // Return token and user info (auto-login after registration)
+    return res.status(201).json({
+      message: "Account created.",
+      token,
+      user: {
+        id: createdUser.id,
+        name: createdUser.name,
+        surname: createdUser.surname,
+        email: createdUser.email,
+        isAdmin: createdUser.isAdmin === 1,
+      },
+    });
 
   } catch (err) {
     console.error("REGISTER ERROR:", err);
@@ -42,17 +86,31 @@ export async function loginUser(req, res) {
       return res.status(401).json({ error: "Invalid login." });
     }
 
-    // Compare hashed password
+    // Vergelijk het ingevoerde wachtwoord met het gehashte wachtwoord
     const isValid = await bcrypt.compare(password, user.PASSWORD);
     if (!isValid) {
       return res.status(401).json({ error: "Invalid login." });
     }
 
+    // Maak een JWT-token aan
+    const token = jwt.sign(
+      {
+        id: user.ID_USER,
+        email: user.EMAIL,
+        isAdmin: user.ISADMIN === 1,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "2h" }
+    );
+
+    // Stuur token en gebruikersinformatie terug
     return res.json({
       message: "Login success",
+      token,
       user: {
         id: user.ID_USER,
         name: user.NAME,
+        surname: user.SURNAME,
         email: user.EMAIL,
         isAdmin: user.ISADMIN === 1,
       },

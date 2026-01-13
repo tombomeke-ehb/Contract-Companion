@@ -94,8 +94,10 @@
 import { reactive, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import auth from '../api/auth'
+import { useUserStore } from '../stores/userStore'
 
 const router = useRouter()
+const userStore = useUserStore()
 
 const form = reactive({
   name: '',
@@ -106,7 +108,7 @@ const form = reactive({
 
 const isSubmitting = ref(false)
 const error = ref('')
-
+// Signup handler
 const handleSignup = async () => {
   if (!form.name || !form.surname || !form.email || form.password.length < 8) {
     error.value = 'Please fill in all fields (including surname, password needs 8+ characters).'
@@ -117,15 +119,26 @@ const handleSignup = async () => {
   error.value = ''
 
   try {
-    await auth.signup(form)
+    const data = await auth.signup(form)
+
+    // Set user in store
+    if (data.user) {
+      userStore.setUser(data.user)
+    }
+
     router.push({ name: 'dashboard' })
   } catch (err) {
-    error.value = err.message || 'Signup failed. Please try again.'
+    // Prefer backend "error" field, then generic message
+    if (err && typeof err === 'object') {
+      error.value = err.error || err.message || 'Signup failed. Please try again.'
+    } else {
+      error.value = 'Signup failed. Please try again.'
+    }
   } finally {
     isSubmitting.value = false
   }
 }
-
+// Continue with Google handler (mock)
 const continueWithGoogle = () => {
   router.push({ name: 'dashboard' })
 }

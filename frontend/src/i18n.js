@@ -1,5 +1,6 @@
 import { createI18n } from 'vue-i18n'
 
+// Define translation messages
 const messages = {
   en: {
     settings: {
@@ -7,12 +8,13 @@ const messages = {
       title: 'Settings',
       subtitle: 'Adjust language, theme and security preferences for your account.',
       resetChanges: 'Reset changes',
-      reset: 'Reset changes', 
+      reset: 'Reset changes',
       saveChanges: 'Save changes',
-      save: 'Save changes',          
+      save: 'Save changes',
       saving: 'Saving...',
       cancel: 'Cancel',
       savedStatus: 'Settings saved successfully.',
+      saveError: 'Failed to save settings. Please try again.',
       applicationSettings: 'Application settings',
       language: 'Language',
       languageEnglish: 'English',
@@ -36,8 +38,8 @@ const messages = {
       notifications: 'Notifications'
     },
 
-     dashboard: {
-      welcomeBack: 'Welcome back, John',
+    dashboard: {
+      welcomeBack: 'Welcome back',
       subtitle: 'Here’s what’s happening with your contracts.',
       uploadNewContract: 'Upload New Contract',
 
@@ -49,6 +51,7 @@ const messages = {
       filterRiskHigh: 'High risk',
       filterRiskMedium: 'Medium risk',
       filterRiskLow: 'Low risk',
+      filterYearAll: 'All years',
       filterMonthAll: 'All months',
 
       recentAnalyses: 'Recent Contract Analyses',
@@ -102,10 +105,16 @@ const messages = {
       commonContracts: 'Common Contracts',
       login: 'Login',
       signup: 'Sign Up',
-      logout: 'Logout'
+      logout: 'Logout',
+      openMenu: 'Open menu',
+      closeMenu: 'Close menu'
     },
-
-
+    toast: {
+      welcome: 'Welcome, {name}',
+      goodbye: 'Goodbye, {name}',
+      loggedOutTitle: 'Logged out',
+      loggedOutBody: 'You have been logged out.'
+    }
   },
   nl: {
     settings: {
@@ -120,6 +129,7 @@ const messages = {
       saving: 'Bezig met opslaan...',
       cancel: 'Annuleren',
       savedStatus: 'Instellingen succesvol opgeslagen.',
+      saveError: 'Instellingen konden niet worden opgeslagen. Probeer het opnieuw.',
 
       applicationSettings: 'Applicatie-instellingen',
       language: 'Taal',
@@ -144,7 +154,7 @@ const messages = {
       notifications: 'Meldingen'
     },
     dashboard: {
-      welcomeBack: 'Welkom terug, John',
+      welcomeBack: 'Welkom terug',
       subtitle: 'Dit is de huidige status van je contracten.',
       uploadNewContract: 'Nieuw contract uploaden',
 
@@ -156,6 +166,7 @@ const messages = {
       filterRiskHigh: 'Hoog risico',
       filterRiskMedium: 'Gemiddeld risico',
       filterRiskLow: 'Laag risico',
+      filterYearAll: 'Alle jaren',
       filterMonthAll: 'Alle maanden',
 
       recentAnalyses: 'Recente contractanalyses',
@@ -210,8 +221,16 @@ const messages = {
       commonContracts: 'Standaardcontracten',
       login: 'Inloggen',
       signup: 'Registreren',
-      logout: 'Uitloggen'
+      logout: 'Uitloggen',
+      openMenu: 'Menu openen',
+      closeMenu: 'Menu sluiten'
     },
+    toast: {
+      welcome: 'Welkom, {name}',
+      goodbye: 'Tot ziens, {name}',
+      loggedOutTitle: 'Uitgelogd',
+      loggedOutBody: 'Je bent uitgelogd.'
+    }
   }
 }
 

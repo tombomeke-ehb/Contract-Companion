@@ -33,7 +33,7 @@ export async function createUser(name, email, hashedPassword, surname = null) {
     VALUES (:nextId, :name, :surname, :email, :password, :isAdmin)
   `;
 
-  return await query(
+  await query(
     sql,
     {
       nextId,
@@ -45,12 +45,21 @@ export async function createUser(name, email, hashedPassword, surname = null) {
     },
     { autoCommit: true }
   );
+
+  // Return a simple user-object so the caller doesn't need an extra SELECT
+  return {
+    id: nextId,
+    name,
+    surname: finalSurname,
+    email,
+    isAdmin: 0,
+  };
 }
 
 // ==============================
 // Admin dashboard functions
 // ==============================
-
+//query to list all users
 export async function listPeople() {
   const result = await query(
     `SELECT ID_USER, NAME, SURNAME, EMAIL, ISADMIN
@@ -82,7 +91,34 @@ export async function createPerson({ name, surname = "", email, passwordHash, is
   return nextId;
 }
 
+// Delete all contract-related records for a given user (but not the user itself)
+export async function deleteUserContracts(id) {
+  // Order matters because of foreign key-like relationships on ID_DOC
+  const tablesWithIdDoc = ["KALENDER", "EINDDATUM", "SAMENVATTING"];
+  for (const table of tablesWithIdDoc) {
+    await query(
+      `DELETE FROM ${table} WHERE ID_DOC IN (SELECT ID_DOC FROM DOCUMENTEN WHERE ID_USER = :id)`,
+      { id },
+      { autoCommit: true }
+    );
+  }
+
+  // Then delete the documents themselves for this user
+  const docResult = await query(
+    `DELETE FROM DOCUMENTEN WHERE ID_USER = :id`,
+    { id },
+    { autoCommit: true }
+  );
+
+  return docResult.rowsAffected || 0;
+}
+
+// Delete the user and all their contracts
 export async function deletePerson(id) {
+  // First remove all contracts for this user
+  await deleteUserContracts(id);
+
+  // Finally delete the user record
   const result = await query(
     `DELETE FROM USERS WHERE ID_USER = :id`,
     { id },
