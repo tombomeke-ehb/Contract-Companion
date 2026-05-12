@@ -81,7 +81,12 @@ const onLogin = async () => {
     const redirectName = userStore.isAdmin ? 'admin-dashboard' : 'dashboard'
     router.push({ name: redirectName })
   } catch (err) {
-    alert(err?.error || 'Invalid email or password')
+    console.error('Login error:', err)
+    if (err instanceof TypeError && err.message === 'Failed to fetch') {
+      alert('Cannot connect to the backend. Please ensure the backend is running and you have accepted the HTTPS certificate at https://localhost:3443')
+    } else {
+      alert(err?.error || 'Invalid email or password')
+    }
   }
 }
 </script>

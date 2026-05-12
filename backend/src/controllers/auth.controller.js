@@ -79,15 +79,26 @@ export async function registerUser(req, res) {
 // LOGIN
 export async function loginUser(req, res) {
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
+    console.log(`[DEBUG AUTH] Login attempt for email: "${email}"`);
+    
+    // Trim email to handle accidental spaces
+    if (email) email = email.trim();
+    console.log(`[DEBUG AUTH] Trimmed email: "${email}"`);
 
     const user = await findUserByEmail(email);
     if (!user) {
+      console.log(`[DEBUG AUTH] User not found in DB for email: "${email}"`);
       return res.status(401).json({ error: "Invalid login." });
     }
 
+    const dbHash = user.PASSWORD || user.password;
+    console.log(`[DEBUG AUTH] User found: ${user.ID_USER}, stored hash starts with: ${dbHash.substring(0, 10)}...`);
+
     // Vergelijk het ingevoerde wachtwoord met het gehashte wachtwoord
-    const isValid = await bcrypt.compare(password, user.PASSWORD);
+    const isValid = await bcrypt.compare(password, dbHash);
+    console.log(`[DEBUG AUTH] Password comparison result: ${isValid}`);
+
     if (!isValid) {
       return res.status(401).json({ error: "Invalid login." });
     }
@@ -95,9 +106,9 @@ export async function loginUser(req, res) {
     // Maak een JWT-token aan
     const token = jwt.sign(
       {
-        id: user.ID_USER,
-        email: user.EMAIL,
-        isAdmin: user.ISADMIN === 1,
+        id: user.ID_USER || user.id_user,
+        email: user.EMAIL || user.email,
+        isAdmin: (user.ISADMIN || user.isadmin) === 1,
       },
       process.env.JWT_SECRET,
       { expiresIn: "2h" }
@@ -108,11 +119,11 @@ export async function loginUser(req, res) {
       message: "Login success",
       token,
       user: {
-        id: user.ID_USER,
-        name: user.NAME,
-        surname: user.SURNAME,
-        email: user.EMAIL,
-        isAdmin: user.ISADMIN === 1,
+        id: user.ID_USER || user.id_user,
+        name: user.NAME || user.name,
+        surname: user.SURNAME || user.surname,
+        email: user.EMAIL || user.email,
+        isAdmin: (user.ISADMIN || user.isadmin) === 1,
       },
     });
 

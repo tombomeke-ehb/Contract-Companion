@@ -1,29 +1,15 @@
 // backend/src/services/report.service.js
 // Service for storing and retrieving contract analysis reports
 
-import oracledb from "oracledb";
-import { query } from "../config/db.js";
+import { query, execute } from "../config/db.js";
 
 export async function createReport(reportJson) {
-  const sql = `
-    INSERT INTO CONTRACT_REPORTS (REPORT_JSON)
-    VALUES (:reportJson)
-    RETURNING ID_REPORT INTO :idReport
-  `;
-  let conn;
-  let idReport;
-  try {
-    conn = await oracledb.getConnection();
-    const result = await conn.execute(
-      sql,
-      { reportJson: JSON.stringify(reportJson), idReport: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER } },
-      { autoCommit: true }
-    );
-    idReport = result.outBinds.idReport[0];
-    return idReport;
-  } finally {
-    if (conn) await conn.close();
-  }
+  const result = await execute(
+    `INSERT INTO CONTRACT_REPORTS (REPORT_JSON)
+     VALUES (:reportJson)`,
+    { reportJson: JSON.stringify(reportJson) }
+  );
+  return result.lastID;
 }
 
 export async function getReportById(reportId) {

@@ -199,29 +199,34 @@ export async function updateContractInfo(req, res) {
       return res.status(400).json({ error: "Missing required fields" });
     }
     // Only allow update if user owns contract or is admin
-    // (Assume DOCUMENTEN table has ID_USER)
     const userId = req.user.id;
     const isAdmin = !!req.user.isAdmin;
-    // Update query
+    
+    // Update query - corrected column names to match schema (TITLE, FILE_TYPE)
     const sql = isAdmin
-      ? `UPDATE DOCUMENTEN SET TITEL = :title, DOC_TYPE = :contractType WHERE ID_DOC = :id`
-      : `UPDATE DOCUMENTEN SET TITEL = :title, DOC_TYPE = :contractType WHERE ID_DOC = :id AND ID_USER = :userId`;
+      ? `UPDATE DOCUMENTEN SET TITLE = :title, FILE_TYPE = :contractType WHERE ID_DOC = :id`
+      : `UPDATE DOCUMENTEN SET TITLE = :title, FILE_TYPE = :contractType WHERE ID_DOC = :id AND ID_USER = :userId`;
+    
     const binds = isAdmin
       ? { id, title, contractType }
       : { id, title, contractType, userId };
-    // Ensure contractType is a string for VARCHAR2
+    
+    // Ensure contractType is a string
     if (typeof binds.contractType !== 'string') {
       binds.contractType = String(binds.contractType)
     }
-    const result = await query(sql, binds, { autoCommit: true });
+    
+    const result = await execute(sql, binds);
     if (result.rowsAffected === 0) {
       return res.status(403).json({ error: "Not allowed or contract not found" });
     }
     res.json({ success: true });
   } catch (err) {
+    console.error('[updateContractInfo] Error:', err);
     res.status(500).json({ error: "Failed to update contract info" });
   }
 }
+
 
 // Database-backed admin common contracts CRUD
 export async function getCommonContracts(req, res) {

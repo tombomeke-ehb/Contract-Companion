@@ -5,7 +5,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon src/server.js",
-    "worker": "node src/worker/contract-analysis-worker.js"
+    "worker": "node src/worker/contract-analysis-worker.js",
+    "db:seed": "node db/seed.js",
+    "db:setup": "node db/setup.js"
   },
   "keywords": [],
   "author": "",
@@ -13,26 +15,26 @@
   "description": "",
   "type": "module",
   "dependencies": {
-    "@google-cloud/documentai": "^9.5.0",
-    "axios": "^1.13.2",
+    "@google-cloud/documentai": "^9.6.1",
+    "axios": "^1.16.0",
     "bcryptjs": "^3.0.3",
-    "cors": "^2.8.5",
+    "cors": "^2.8.6",
     "cross-env": "^10.1.0",
-    "dotenv": "^17.2.3",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "mkcert": "^3.2.0",
     "mongoose": "^8.20.0",
-    "multer": "^2.0.2",
-    "nodemailer": "^7.0.12",
-    "oracledb": "^6.10.0",
+    "multer": "^2.1.1",
+    "nodemailer": "^7.0.13",
+    "sqlite3": "^5.1.7",
     "pinia": "^3.0.4",
-    "selfsigned": "^5.4.0",
-    "vue": "^3.5.26",
-    "vue-i18n": "^11.2.8",
+    "selfsigned": "^5.5.0",
+    "vue": "^3.5.34",
+    "vue-i18n": "^11.4.2",
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
-    "nodemon": "^3.1.11"
+    "nodemon": "^3.1.14"
   }
 }

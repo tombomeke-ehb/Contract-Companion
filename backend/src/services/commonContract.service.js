@@ -1,8 +1,7 @@
 // backend/src/services/commonContract.service.js
 // Database operations for the admin-managed common contracts library
 
-import oracledb from "oracledb";
-import { query } from "../config/db.js";
+import { query, execute } from "../config/db.js";
 import { createReport, getReportById } from "./report.service.js";
 
 /**
@@ -11,7 +10,7 @@ import { createReport, getReportById } from "./report.service.js";
  */
 export async function getAllCommonContracts() {
   const sql = `
-    SELECT 
+    SELECT
       ID_CONTRACT,
       CONTRACT_KEY,
       NAME,
@@ -29,9 +28,9 @@ export async function getAllCommonContracts() {
   `;
 
   const result = await query(sql);
-  
-  // Transform Oracle rows to frontend-friendly format
-  return result.rows.map(row => ({
+
+  // Transform rows to frontend-friendly format
+  return (result.rows || []).map(row => ({
     id: row.CONTRACT_KEY,
     name: row.NAME,
     category: row.CATEGORY,
@@ -41,7 +40,7 @@ export async function getAllCommonContracts() {
       medium: row.RISK_MEDIUM || 0,
       low: row.RISK_LOW || 0,
     },
-    updated: row.UPDATED_TEXT || '',
+    updated: row.UPDATED_TEXT || (row.CREATED_AT ? new Date(row.CREATED_AT).toLocaleDateString('nl-BE', { month: 'short', year: 'numeric' }) : ''),
     sampleReport: row.SAMPLE_REPORT_ID || 1,
   }));
 }
@@ -58,29 +57,22 @@ export async function createCommonContract(contract) {
     summary = '',
     stats = {},
     updated = '',
-    analysisReport = null, // <-- new field for full report
+    analysisReport = null,
   } = contract;
 
   // Generate slug from name if no ID provided
   const slugBase = String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   const contractKey = id && String(id).trim() ? String(id) : `${slugBase}-${Date.now().toString(36)}`;
 
-  // Store analysis report and get its ID
-  if (analysisReport) {
-    console.log('[createCommonContract] analysisReport received:', JSON.stringify(analysisReport));
-  } else {
-    console.warn('[createCommonContract] NO analysisReport received, using fallback ID 1');
-  }
   let sampleReportId = 1;
   if (analysisReport) {
     sampleReportId = await createReport(analysisReport);
-    console.log('[createCommonContract] New report stored with ID:', sampleReportId);
   }
 
   const sql = `
     INSERT INTO COMMON_CONTRACTS (
-      CONTRACT_KEY, NAME, CATEGORY, SUMMARY, 
-      RISK_HIGH, RISK_MEDIUM, RISK_LOW, 
+      CONTRACT_KEY, NAME, CATEGORY, SUMMARY,
+      RISK_HIGH, RISK_MEDIUM, RISK_LOW,
       UPDATED_TEXT, SAMPLE_REPORT_ID
     ) VALUES (
       :contractKey, :name, :category, :summary,
@@ -97,31 +89,25 @@ export async function createCommonContract(contract) {
     riskHigh: Number(stats.high || 0),
     riskMedium: Number(stats.medium || 0),
     riskLow: Number(stats.low || 0),
-    updatedText: updated || new Date().toLocaleString('en-US', { month: 'short', year: 'numeric' }),
+    updatedText: updated || new Date().toLocaleString('nl-BE', { month: 'short', year: 'numeric' }),
     sampleReportId: Number(sampleReportId),
   };
 
-  let conn;
-  try {
-    conn = await oracledb.getConnection();
-    await conn.execute(sql, bindParams, { autoCommit: true });
-    // Return the created contract
-    return {
-      id: contractKey,
-      name,
-      category,
-      summary,
-      stats: {
-        high: bindParams.riskHigh,
-        medium: bindParams.riskMedium,
-        low: bindParams.riskLow,
-      },
-      updated: bindParams.updatedText,
-      sampleReport: bindParams.sampleReportId,
-    };
-  } finally {
-    if (conn) await conn.close();
-  }
+  await execute(sql, bindParams);
+
+  return {
+    id: contractKey,
+    name,
+    category,
+    summary,
+    stats: {
+      high: bindParams.riskHigh,
+      medium: bindParams.riskMedium,
+      low: bindParams.riskLow,
+    },
+    updated: bindParams.updatedText,
+    sampleReport: bindParams.sampleReportId,
+  };
 }
 
 /**
@@ -139,17 +125,19 @@ export async function updateCommonContract(contractKey, updates) {
     sampleReport,
   } = updates;
 
+  // SQLite doesn't have NVL or easy conditional updates in one go like this with named params easily
+  // but we can use COALESCE and our helper translates NVL to COALESCE
   const sql = `
     UPDATE COMMON_CONTRACTS
-    SET 
-      NAME = NVL(:name, NAME),
-      CATEGORY = NVL(:category, CATEGORY),
-      SUMMARY = NVL(:summary, SUMMARY),
-      RISK_HIGH = NVL(:riskHigh, RISK_HIGH),
-      RISK_MEDIUM = NVL(:riskMedium, RISK_MEDIUM),
-      RISK_LOW = NVL(:riskLow, RISK_LOW),
-      UPDATED_TEXT = NVL(:updatedText, UPDATED_TEXT),
-      SAMPLE_REPORT_ID = NVL(:sampleReportId, SAMPLE_REPORT_ID),
+    SET
+      NAME = COALESCE(:name, NAME),
+      CATEGORY = COALESCE(:category, CATEGORY),
+      SUMMARY = COALESCE(:summary, SUMMARY),
+      RISK_HIGH = COALESCE(:riskHigh, RISK_HIGH),
+      RISK_MEDIUM = COALESCE(:riskMedium, RISK_MEDIUM),
+      RISK_LOW = COALESCE(:riskLow, RISK_LOW),
+      UPDATED_TEXT = COALESCE(:updatedText, UPDATED_TEXT),
+      SAMPLE_REPORT_ID = COALESCE(:sampleReportId, SAMPLE_REPORT_ID),
       UPDATED_AT = CURRENT_TIMESTAMP
     WHERE CONTRACT_KEY = :contractKey
   `;
@@ -166,43 +154,37 @@ export async function updateCommonContract(contractKey, updates) {
     sampleReportId: sampleReport !== undefined ? Number(sampleReport) : null,
   };
 
-  let conn;
-  try {
-    conn = await oracledb.getConnection();
-    const result = await conn.execute(sql, bindParams, { autoCommit: true });
-    
-    if (result.rowsAffected === 0) {
-      throw new Error('Contract not found');
-    }
+  const result = await execute(sql, bindParams);
 
-    // Fetch and return the updated contract
-    const selectSql = `
-      SELECT 
-        CONTRACT_KEY, NAME, CATEGORY, SUMMARY,
-        RISK_HIGH, RISK_MEDIUM, RISK_LOW,
-        UPDATED_TEXT, SAMPLE_REPORT_ID
-      FROM COMMON_CONTRACTS
-      WHERE CONTRACT_KEY = :contractKey
-    `;
-    const selectResult = await conn.execute(selectSql, { contractKey }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
-    
-    const row = selectResult.rows[0];
-    return {
-      id: row.CONTRACT_KEY,
-      name: row.NAME,
-      category: row.CATEGORY,
-      summary: row.SUMMARY || '',
-      stats: {
-        high: row.RISK_HIGH || 0,
-        medium: row.RISK_MEDIUM || 0,
-        low: row.RISK_LOW || 0,
-      },
-      updated: row.UPDATED_TEXT || '',
-      sampleReport: row.SAMPLE_REPORT_ID || 1,
-    };
-  } finally {
-    if (conn) await conn.close();
+  if (result.rowsAffected === 0) {
+    throw new Error('Contract not found');
   }
+
+  // Fetch and return the updated contract
+  const selectSql = `
+    SELECT
+      CONTRACT_KEY, NAME, CATEGORY, SUMMARY,
+      RISK_HIGH, RISK_MEDIUM, RISK_LOW,
+      UPDATED_TEXT, SAMPLE_REPORT_ID
+    FROM COMMON_CONTRACTS
+    WHERE CONTRACT_KEY = :contractKey
+  `;
+  const selectResult = await query(selectSql, { contractKey });
+
+  const row = selectResult.rows[0];
+  return {
+    id: row.CONTRACT_KEY,
+    name: row.NAME,
+    category: row.CATEGORY,
+    summary: row.SUMMARY || '',
+    stats: {
+      high: row.RISK_HIGH || 0,
+      medium: row.RISK_MEDIUM || 0,
+      low: row.RISK_LOW || 0,
+    },
+    updated: row.UPDATED_TEXT || '',
+    sampleReport: row.SAMPLE_REPORT_ID || 1,
+  };
 }
 
 /**
@@ -211,20 +193,13 @@ export async function updateCommonContract(contractKey, updates) {
  */
 export async function deleteCommonContract(contractKey) {
   const sql = `DELETE FROM COMMON_CONTRACTS WHERE CONTRACT_KEY = :contractKey`;
+  const result = await execute(sql, { contractKey });
 
-  let conn;
-  try {
-    conn = await oracledb.getConnection();
-    const result = await conn.execute(sql, { contractKey }, { autoCommit: true });
-    
-    if (result.rowsAffected === 0) {
-      throw new Error('Contract not found');
-    }
-
-    return { success: true, contractKey };
-  } finally {
-    if (conn) await conn.close();
+  if (result.rowsAffected === 0) {
+    throw new Error('Contract not found');
   }
+
+  return { success: true, contractKey };
 }
 
 // Helper to map string[] to {title, body}[]
@@ -282,3 +257,4 @@ export async function getCommonContractReport(contractKey) {
   };
   return mapped;
 }
+

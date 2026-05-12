@@ -163,7 +163,7 @@ We volgden de **Design Thinking** methodologie:
    - Gestructureerd rapport wordt gegenereerd
 
 5. **Opslag & Presentatie**
-   - Contract metadata wordt opgeslagen in Oracle DB
+   - Contract metadata wordt opgeslagen in SQLite DB (lokaal)
    - Bestanden worden veilig opgeslagen
    - Dashboard toont resultaten aan gebruiker
 
@@ -178,7 +178,7 @@ We volgden de **Design Thinking** methodologie:
 
 **Frontend:** Vue.js 3 • Vite • Pinia • Vue Router  
 **Backend:** Node.js • Express • JWT • Multer • bcryptjs  
-**Database:** Oracle Database  
+**Database:** SQLite (lokaal) - vroeger Oracle  
 **AI & OCR:** Google Document AI • OpenAI GPT  
 **Security:** HTTPS/TLS • JWT auth • bcrypt encryption  
 **Tools:** Git • GitHub • Trello • ESLint
@@ -189,9 +189,8 @@ We volgden de **Design Thinking** methodologie:
 
 ### Vereisten
 - Node.js versie 20.19.0 of hoger
-- Oracle Database
-- Google Cloud account met Document AI API toegang
 - Git voor versiebeheer
+- Optional: Google Cloud account met Document AI API toegang (voor contract analyse)
 
 ### Stap 1: Repository klonen
 ```bash
@@ -209,27 +208,45 @@ npm run install:backend
 npm run install:frontend
 ```
 
-### Stap 3: Omgevingsvariabelen configureren
-Maak een `.env` bestand aan in de backend map met de volgende variabelen:
+### Stap 3: Database setup
+De applicatie gebruikte eerder Oracle Database, maar is nu omgezet naar **SQLite** voor eenvoudiger lokale development!
+
+```bash
+cd backend
+
+# Maak de database schema aan
+npm run db:setup
+
+# Maak test accounts aan
+npm run db:seed
+```
+
+Dit zal:
+- 📁 Een `data/` directory aanmaken
+- 📊 De SQLite database (`contracts.db`) initialiseren
+- 👤 Test accounts aanmaken:
+  - **Admin**: admin@test.com / Admin123!
+  - **Normale user**: user@test.com / User123!
+
+### Stap 4: Omgevingsvariabelen configureren
+Een `.env` bestand is al aanwezig in de backend folder. De database is nu automatisch geconfigureerd!
+
 ```env
+# Backend/.env
 PORT=3000
 HTTPS_PORT=3443
 HTTPS_KEY=../certs/key.pem
 HTTPS_CERT=../certs/cert.pem
-JWT_SECRET=your_jwt_secret_here
-DB_USER=your_oracle_user
-DB_PASSWORD=your_oracle_password
+JWT_SECRET=dev_secret_key_change_in_production
+
+# Database: SQLite (geen configuratie nodig)
+# Database file: ./data/contracts.db
+```
 DB_CONNECTION_STRING=your_oracle_connection_string
 GOOGLE_APPLICATION_CREDENTIALS=./src/config/documentation-key.json
 ```
 
-### Stap 4: Database setup
-Voer het DDL-script uit in je Oracle Database:
-```bash
-sqlplus user/password@connection_string @backend/db/COMMON_CONTRACTS_ddl.sql
-```
-
-### Stap 5: Google Cloud Document AI configureren
+### Stap 5: Google Cloud Document AI configureren (Optional)
 1. Maak een Google Cloud project aan
 2. Activeer de Document AI API
 3. Maak een service account aan en download de JSON key
@@ -246,8 +263,116 @@ cd frontend && npm run dev
 ```
 
 De applicatie is nu beschikbaar op:
-- **Frontend**: http://localhost:5173
+- **Frontend**: https://localhost:5173
 - **Backend**: https://localhost:3443
+
+### Reset Database (als iets fout gaat)
+```bash
+### Reset Database (als iets fout gaat)
+```bash
+cd backend
+
+# Verwijder de bestaande database
+rm -r data/contracts.db
+
+# Maak schema en seed opnieuw aan
+npm run db:setup
+npm run db:seed
+```
+
+---
+
+## 🔑 Login Credentials
+
+Na het uitvoeren van `npm run db:seed` zijn de volgende test accounts beschikbaar:
+
+| Email | Wachtwoord | Rol | Beschrijving |
+|-------|-----------|-----|-------------|
+| **admin@test.com** | **Admin123!** | Admin | Beheerder met volledige toegang |
+| **user@test.com** | **User123!** | User | Normale gebruiker |
+
+### Eerste keer inloggen
+1. Go to https://localhost:5173
+2. Klik op "Login"
+3. Voer email en wachtwoord in
+4. Je bent nu ingelogd!
+
+---
+
+## 🧪 Testing Guide
+
+### 1. Backend API Testen
+
+#### Login Test
+```powershell
+$body = @{
+    email = "admin@test.com"
+    password = "Admin123!"
+} | ConvertTo-Json
+
+Invoke-WebRequest -Uri "https://localhost:3443/api/auth/login" `
+  -Method POST `
+  -ContentType "application/json" `
+  -Body $body `
+  -SkipCertificateCheck
+```
+
+#### Registratie Test
+```powershell
+$body = @{
+    name = "John"
+    surname = "Doe"
+    email = "john@example.com"
+    password = "SecurePass123"
+} | ConvertTo-Json
+
+Invoke-WebRequest -Uri "https://localhost:3443/api/auth/register" `
+  -Method POST `
+  -ContentType "application/json" `
+  -Body $body `
+  -SkipCertificateCheck
+```
+
+#### Contracten Ophalen (met token)
+```powershell
+# Eerst login om token te krijgen
+$loginBody = @{
+    email = "admin@test.com"
+    password = "Admin123!"
+} | ConvertTo-Json
+
+$loginResponse = Invoke-WebRequest -Uri "https://localhost:3443/api/auth/login" `
+  -Method POST `
+  -ContentType "application/json" `
+  -Body $loginBody `
+  -SkipCertificateCheck
+
+$token = ($loginResponse.Content | ConvertFrom-Json).token
+
+# Nu contracten ophalen
+Invoke-WebRequest -Uri "https://localhost:3443/api/contracts" `
+  -Method GET `
+  -Headers @{ "Authorization" = "Bearer $token" } `
+  -SkipCertificateCheck
+```
+
+### 2. Frontend Testen
+
+1. **Open Frontend**: https://localhost:5173
+2. **Login**: Gebruik admin@test.com / Admin123!
+3. **Dashboard**: Bekijk lege contracten lijst
+4. **Upload**: Probeer een PDF contract te uploaden
+5. **Verifieer**: Contract moet verschijnen in dashboard
+
+### 3. Database Controleren
+
+```powershell
+# SQLite database file
+Get-Item -Path "backend/data/contracts.db"
+
+# Check file grootte
+(Get-Item -Path "backend/data/contracts.db").Length
+```
 
 ---
 

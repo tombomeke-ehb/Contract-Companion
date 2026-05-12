@@ -1,81 +1,57 @@
-import oracledb from "oracledb";
-import { query } from "../config/db.js";
-
-// Helper: Read Oracle LOB (CLOB) to string
-async function readLobToString(lob) {
-  return new Promise((resolve, reject) => {
-    if (!lob) return resolve(null);
-    let str = '';
-    lob.setEncoding('utf8');
-    lob.on('data', (chunk) => { str += chunk; });
-    lob.on('end', () => resolve(str));
-    lob.on('error', reject);
-  });
-}
+import { query, execute } from "../config/db.js";
 
 // Service for working with contract summaries and risk scores.
 // Maps between the SAMENVATTING (summary) table and higher level objects used in controllers.
 
 // Create a new summary row for a given document, now with JSON analysis
-export async function createSummary({ idDoc, text, riskScore, analysisJson }) {
-  const sql = `
-    INSERT INTO SAMENVATTING (ID_DOC, TEKST, RISK_SCORE, ANALYSE_JSON)
-    VALUES (:idDoc, :text, :riskScore, :analysisJson)
-    RETURNING SAMENVATTING_ID INTO :outId
-  `;
+export async function createSummary({ idDoc, text, analysisJson }) {
+  const result = await execute(
+    `INSERT INTO SAMENVATTING (ID_DOC, SUMMARY, KEY_CLAUSES, RED_FLAGS)
+     VALUES (:idDoc, :text, :keyClauses, :redFlags)`,
+    {
+      idDoc,
+      text,
+      keyClauses: analysisJson?.clauses ? JSON.stringify(analysisJson.clauses) : null,
+      redFlags: analysisJson?.keyFindings ? JSON.stringify(analysisJson.keyFindings) : null,
+    }
+  );
 
-  const binds = {
-    // Explicit types so oracledb doesn't complain about bind data.
-    idDoc: { val: idDoc, type: oracledb.NUMBER },
-    text: { val: text, type: oracledb.STRING },
-    riskScore: { val: riskScore, type: oracledb.NUMBER },
-    analysisJson: { val: analysisJson, type: oracledb.CLOB },
-    outId: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
-  };
-
-  const result = await query(sql, binds, { autoCommit: true });
-  const newId = result.outBinds?.outId?.[0] ?? null;
-
-  return { id: newId, idDoc, text, riskScore };
+  return { id: result.lastID, idDoc, text };
 }
 
 // Fetch a single summary for a given document ID, now with JSON analysis
 export async function getSummaryByDocumentId(idDoc) {
-  const sql = `
-    SELECT SAMENVATTING_ID, ID_DOC, TEKST, RISK_SCORE, ANALYSE_JSON
-    FROM SAMENVATTING
-    WHERE ID_DOC = :idDoc
-  `;
+  const result = await query(
+    `SELECT ID_SUMMARY, ID_DOC, SUMMARY
+     FROM SAMENVATTING
+     WHERE ID_DOC = :idDoc`,
+    { idDoc }
+  );
 
-  const result = await query(sql, { idDoc });
   if (!result.rows || result.rows.length === 0) return null;
 
   const row = result.rows[0];
   return {
-    id: row.SAMENVATTING_ID,
+    id: row.ID_SUMMARY,
     idDoc: row.ID_DOC,
-    text: row.TEKST,
-    riskScore: row.RISK_SCORE,
-    analysisJson: row.ANALYSE_JSON ? JSON.parse(row.ANALYSE_JSON) : null,
+    text: row.SUMMARY,
   };
 }
 
 // List summaries, optionally filtered by user later via joins.
 export async function listSummaries(limit = 50) {
-  const sql = `
-    SELECT SAMENVATTING_ID, ID_DOC, TEKST, RISK_SCORE
-    FROM SAMENVATTING
-    ORDER BY SAMENVATTING_ID DESC
-    FETCH FIRST :limit ROWS ONLY
-  `;
-
-  const result = await query(sql, { limit });
+  const result = await query(
+    `SELECT ID_SUMMARY, ID_DOC, SUMMARY
+     FROM SAMENVATTING
+     ORDER BY ID_SUMMARY DESC
+     LIMIT :limit`,
+    { limit }
+  );
 
   return (result.rows || []).map((row) => ({
-    id: row.SAMENVATTING_ID,
+    id: row.ID_SUMMARY,
     idDoc: row.ID_DOC,
-    text: row.TEKST,
-    riskScore: row.RISK_SCORE,
+    text: row.SUMMARY,
   }));
 }
 
@@ -90,64 +66,59 @@ export async function createDocumentWithSummary({
   endDate,
   analysisJson
 }) {
-  // 1) Insert into DOCUMENTEN with a generated ID_DOC using a sequence-less pattern
-  const insertDocSql = `
-    INSERT INTO DOCUMENTEN (ID_DOC, ID_USER, DOC_TYPE, TITEL, BESCHRIJVING, UPLOADDATUM, EIND_DATEBOOL, STATUS, FULLTEXT)
-    VALUES ((SELECT NVL(MAX(ID_DOC), 0) + 1 FROM DOCUMENTEN), :userId, :docType, :title, :description, SYSDATE, :endDateBool, 'pending', :fullText)
-    RETURNING ID_DOC INTO :outIdDoc
-  `;
+  // 1) Insert into DOCUMENTEN
+  const docResult = await execute(
+    `INSERT INTO DOCUMENTEN (ID_USER, FILE_NAME, FILE_PATH, FILE_TYPE, TITLE, DESCRIPTION, RISK_SCORE, STATUS)
+     VALUES (:userId, :title, '', :docType, :title, :description, :riskScore, 'completed')`,
+    {
+      userId,
+      title,
+      description,
+      docType: docType || 'unknown',
+      riskScore: riskScore || 0,
+    }
+  );
 
-  const docBinds = {
-    userId: { val: userId, type: oracledb.NUMBER },
-    docType: { val: docType, type: oracledb.STRING },
-    title: { val: title, type: oracledb.STRING },
-    description: { val: description, type: oracledb.STRING },
-    endDateBool: { val: endDate ? 1 : 0, type: oracledb.NUMBER },
-    fullText: { val: fullText, type: oracledb.CLOB },
-    outIdDoc: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
-  };
-
-  const docResult = await query(insertDocSql, docBinds, { autoCommit: true });
-  const newDocId = docResult.outBinds?.outIdDoc?.[0];
+  const newDocId = docResult.lastID;
 
   // 2) Optional insert into EINDDATUM if endDate is provided
   if (endDate) {
-    const insertEndSql = `
-      INSERT INTO EINDDATUM (ID_DATE, ID_DOC, EIND_DATE)
-      VALUES ((SELECT NVL(MAX(ID_DATE), 0) + 1 FROM EINDDATUM), :idDoc, :endDate)
-    `;
-
-    await query(
-      insertEndSql,
+    await execute(
+      `INSERT INTO EINDDATUM (ID_DOC, END_DATE)
+       VALUES (:idDoc, :endDate)`,
       {
-        idDoc: { val: newDocId, type: oracledb.NUMBER },
-        endDate: { val: endDate, type: oracledb.DATE },
-      },
-      { autoCommit: true }
+        idDoc: newDocId,
+        endDate,
+      }
     );
   }
 
   // 3) Insert into SAMENVATTING for this document
-  const insertSummarySql = `
-    INSERT INTO SAMENVATTING (ID_DOC, TEKST, RISK_SCORE, ANALYSE_JSON)
-    VALUES (:idDoc, :text, :riskScore, :analysisJson)
-    RETURNING SAMENVATTING_ID INTO :outId
-  `;
+  const parsedAnalysis = typeof analysisJson === 'string' ? JSON.parse(analysisJson) : analysisJson;
+  
+  await execute(
+    `INSERT INTO SAMENVATTING (ID_DOC, SUMMARY, KEY_CLAUSES, RED_FLAGS)
+     VALUES (:idDoc, :text, :keyClauses, :redFlags)`,
+    {
+      idDoc: newDocId,
+      text: fullText || '',
+      keyClauses: parsedAnalysis?.clauses ? JSON.stringify(parsedAnalysis.clauses) : null,
+      redFlags: parsedAnalysis?.keyFindings ? JSON.stringify(parsedAnalysis.keyFindings) : null,
+    }
+  );
 
-  const summaryBinds = {
-    idDoc: { val: newDocId, type: oracledb.NUMBER },
-    text: { val: fullText, type: oracledb.STRING },
-    riskScore: { val: riskScore, type: oracledb.NUMBER },
-    analysisJson: { val: analysisJson, type: oracledb.CLOB },
-    outId: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
-  };
-
-  const summaryResult = await query(insertSummarySql, summaryBinds, { autoCommit: true });
-  const newSummaryId = summaryResult.outBinds?.outId?.[0];
+  // 4) Insert into CONTRACT_REPORTS for the full JSON
+  await execute(
+    `INSERT INTO CONTRACT_REPORTS (ID_DOC, REPORT_JSON)
+     VALUES (:idDoc, :reportJson)`,
+    {
+      idDoc: newDocId,
+      reportJson: typeof analysisJson === 'string' ? analysisJson : JSON.stringify(analysisJson),
+    }
+  );
 
   return {
     docId: newDocId,
-    summaryId: newSummaryId,
   };
 }
 
@@ -158,54 +129,41 @@ export async function createDocumentWithPendingStatus({
   description,
   fullText
 }) {
-  console.log('[createDocumentWithPendingStatus] fullText length:', fullText ? fullText.length : 0, '| preview:', fullText ? fullText.slice(0, 200) : 'EMPTY');
-  // Insert only DOCUMENTEN, status 'pending', no summary/AI
-  const insertDocSql = `
-    INSERT INTO DOCUMENTEN (ID_DOC, ID_USER, DOC_TYPE, TITEL, BESCHRIJVING, UPLOADDATUM, EIND_DATEBOOL, STATUS, FULLTEXT)
-    VALUES ((SELECT NVL(MAX(ID_DOC), 0) + 1 FROM DOCUMENTEN), :userId, :docType, :title, :description, SYSDATE, 0, 'pending', :fullText)
-    RETURNING ID_DOC INTO :outIdDoc
-  `;
-  const docBinds = {
-    userId: { val: userId, type: oracledb.NUMBER },
-    docType: { val: docType, type: oracledb.STRING },
-    title: { val: title, type: oracledb.STRING },
-    description: { val: description, type: oracledb.STRING },
-    fullText: { val: fullText, type: oracledb.CLOB },
-    outIdDoc: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
-  };
-  const docResult = await query(insertDocSql, docBinds, { autoCommit: true });
-  const newDocId = docResult.outBinds?.outIdDoc?.[0];
-  return { docId: newDocId };
+  console.log('[createDocumentWithPendingStatus] fullText length:', fullText ? fullText.length : 0);
+
+  const result = await execute(
+    `INSERT INTO DOCUMENTEN (ID_USER, FILE_NAME, FILE_PATH, FILE_TYPE, TITLE, DESCRIPTION, STATUS)
+     VALUES (:userId, :title, '', :docType, :title, :description, 'pending')`,
+    {
+      userId,
+      title,
+      description,
+      docType: docType || 'unknown',
+    }
+  );
+
+  return { docId: result.lastID };
 }
 
 export async function listUserContracts({ userId, isAdmin }) {
-  const sql = `
-    SELECT
-      d.ID_DOC,
-      d.TITEL,
-      d.BESCHRIJVING,
-      d.UPLOADDATUM,
-      s.RISK_SCORE,
-      s.ANALYSE_JSON,
-      u.NAME AS USER_NAME,
-      u.SURNAME AS USER_SURNAME,
-      u.EMAIL AS USER_EMAIL
-    FROM DOCUMENTEN d
-    LEFT JOIN SAMENVATTING s ON s.ID_DOC = d.ID_DOC
-    LEFT JOIN USERS u ON u.ID_USER = d.ID_USER
-    WHERE (:isAdmin = 1 OR d.ID_USER = :userId)
-      AND d.STATUS != 'deleted'
-    ORDER BY d.UPLOADDATUM DESC, d.ID_DOC DESC
-  `;
+  const sql = isAdmin
+    ? `SELECT d.ID_DOC, d.TITLE, d.DESCRIPTION, d.CREATED_AT, d.RISK_SCORE, d.STATUS,
+              u.NAME AS USER_NAME, u.SURNAME AS USER_SURNAME, u.EMAIL AS USER_EMAIL
+       FROM DOCUMENTEN d
+       LEFT JOIN USERS u ON u.ID_USER = d.ID_USER
+       WHERE d.STATUS != 'deleted'
+       ORDER BY d.CREATED_AT DESC, d.ID_DOC DESC`
+    : `SELECT d.ID_DOC, d.TITLE, d.DESCRIPTION, d.CREATED_AT, d.RISK_SCORE, d.STATUS,
+              u.NAME AS USER_NAME, u.SURNAME AS USER_SURNAME, u.EMAIL AS USER_EMAIL
+       FROM DOCUMENTEN d
+       LEFT JOIN USERS u ON u.ID_USER = d.ID_USER
+       WHERE d.ID_USER = :userId AND d.STATUS != 'deleted'
+       ORDER BY d.CREATED_AT DESC, d.ID_DOC DESC`;
 
-  const binds = {
-    isAdmin: isAdmin ? 1 : 0,
-    userId: userId ?? null,
-  };
+  const params = isAdmin ? {} : { userId };
+  const result = await query(sql, params);
 
-  const result = await query(sql, binds);
-
-  return Promise.all((result.rows || []).map(async (row) => {
+  return (result.rows || []).map((row) => {
     const nameParts = [];
     if (row.USER_NAME) nameParts.push(row.USER_NAME);
     if (row.USER_SURNAME) nameParts.push(row.USER_SURNAME);
@@ -224,198 +182,180 @@ export async function listUserContracts({ userId, isAdmin }) {
       }
     }
 
-    // Parse ANALYSE_JSON (AI analysis) if present, to extract AI title
-    let aiTitle = undefined;
-    if (row.ANALYSE_JSON) {
-      let json = row.ANALYSE_JSON;
-      if (typeof json !== 'string' && typeof json === 'object' && typeof json.on === 'function') {
-        // Oracle LOB
-        const lobStr = await readLobToString(json);
-        try {
-          json = JSON.parse(lobStr);
-        } catch (e) {
-          json = undefined;
-        }
-      } else if (typeof json === 'string') {
-        try {
-          json = JSON.parse(json);
-        } catch (e) {
-          json = undefined;
-        }
-      }
-      if (json && json.title) aiTitle = json.title;
-    }
-
     return {
       id: row.ID_DOC,
-      title: row.TITEL || "Contract",
-      aiTitle, // <-- AI-generated title from Gemini
-      subtitle: `Uploaded by ${displayName}  ${row.BESCHRIJVING || ""}`.trim(),
+      title: row.TITLE || "Contract",
+      subtitle: `Uploaded by ${displayName} ${row.DESCRIPTION || ""}`.trim(),
       riskScore: score ?? null,
       risk,
       riskLabel,
-      date: row.UPLOADDATUM,
-      status: row.STATUS || (row.RISK_SCORE == null ? 'pending' : 'done') // status from DB or fallback
+      date: row.CREATED_AT,
+      status: row.STATUS || (score == null ? 'pending' : 'done'),
     };
-  }));
+  });
 }
 
-// Pas ook getContractWithSummary aan zodat analysisJson wordt meegegeven
+// Haal contract met samenvatting op
 export async function getContractWithSummary(idDoc) {
-  const sql = `
-    SELECT
-      d.ID_DOC,
-      d.TITEL,
-      d.BESCHRIJVING,
-      d.UPLOADDATUM,
-      s.TEKST,
-      s.RISK_SCORE,
-      s.ANALYSE_JSON
-    FROM DOCUMENTEN d
-    LEFT JOIN SAMENVATTING s ON s.ID_DOC = d.ID_DOC
-    WHERE d.ID_DOC = :idDoc
-  `;
+  const result = await query(
+    `SELECT d.ID_DOC, d.TITLE, d.DESCRIPTION, d.CREATED_AT, d.RISK_SCORE,
+            s.ID_SUMMARY, s.SUMMARY, s.KEY_CLAUSES, s.RED_FLAGS,
+            cr.REPORT_JSON
+     FROM DOCUMENTEN d
+     LEFT JOIN SAMENVATTING s ON s.ID_DOC = d.ID_DOC
+     LEFT JOIN CONTRACT_REPORTS cr ON cr.ID_DOC = d.ID_DOC
+     WHERE d.ID_DOC = :idDoc`,
+    { idDoc }
+  );
 
-  const result = await query(sql, { idDoc });
   if (!result.rows || result.rows.length === 0) {
     console.log('[getContractWithSummary] No contract found for ID_DOC:', idDoc);
     return null;
   }
 
   const row = result.rows[0];
-  // Handle Oracle LOBs for text and analysisJson
-  let parsedJson = null;
-  let textStr = null;
-  if (row.ANALYSE_JSON) {
-    if (typeof row.ANALYSE_JSON === 'string') {
-      try {
-        parsedJson = JSON.parse(row.ANALYSE_JSON);
-      } catch (e) {
-        console.error('[getContractWithSummary] Failed to parse ANALYSE_JSON for ID_DOC:', idDoc, e, row.ANALYSE_JSON);
-      }
-    } else if (typeof row.ANALYSE_JSON === 'object' && row.ANALYSE_JSON !== null && typeof row.ANALYSE_JSON.on === 'function') {
-      // It's a LOB
-      const lobStr = await readLobToString(row.ANALYSE_JSON);
-      try {
-        parsedJson = JSON.parse(lobStr);
-      } catch (e) {
-        console.error('[getContractWithSummary] Failed to parse LOB ANALYSE_JSON for ID_DOC:', idDoc, e, lobStr);
-      }
+  let analysisJson = null;
+
+  try {
+    if (row.REPORT_JSON) {
+      analysisJson = JSON.parse(row.REPORT_JSON);
+    } else {
+      analysisJson = {
+        keyClauses: row.KEY_CLAUSES ? JSON.parse(row.KEY_CLAUSES) : [],
+        redFlags: row.RED_FLAGS ? JSON.parse(row.RED_FLAGS) : [],
+      };
     }
-  } else {
-    console.log('[getContractWithSummary] No ANALYSE_JSON for ID_DOC:', idDoc);
+  } catch (e) {
+    console.warn('[getContractWithSummary] JSON parse error:', e.message);
   }
-  if (row.TEKST) {
-    if (typeof row.TEKST === 'string') {
-      textStr = row.TEKST;
-    } else if (typeof row.TEKST === 'object' && row.TEKST !== null && typeof row.TEKST.on === 'function') {
-      textStr = await readLobToString(row.TEKST);
-    }
-  }
+
   return {
     id: row.ID_DOC,
-    title: row.TITEL || "Contract",
-    description: row.BESCHRIJVING || "",
-    uploadedAt: row.UPLOADDATUM,
-    text: textStr,
+    title: row.TITLE || "Contract",
+    description: row.DESCRIPTION || "",
+    uploadedAt: row.CREATED_AT,
+    text: row.SUMMARY,
     riskScore: row.RISK_SCORE,
-    analysisJson: parsedJson,
+    analysisJson
   };
 }
 
 // Verwijder een contract en bijbehorende samenvatting
 export async function deleteContractById(idDoc) {
   console.log('[deleteContractById] Start for ID_DOC:', idDoc);
-  // Hard delete: verwijder uit alle relevante tabellen
-  const tables = ['KALENDER', 'EINDDATUM', 'SAMENVATTING', 'DOCUMENTEN'];
+
+  const tables = ['KALENDER', 'EINDDATUM', 'SAMENVATTING', 'CONTRACT_REPORTS', 'DOCUMENTEN'];
   for (const table of tables) {
-    await query(`DELETE FROM ${table} WHERE ID_DOC = :idDoc`, { idDoc }, { autoCommit: true });
+    await execute(
+      `DELETE FROM ${table} WHERE ID_DOC = :idDoc`,
+      { idDoc }
+    );
   }
+
   console.log('[deleteContractById] Done for ID_DOC:', idDoc);
 }
 
 export async function updateContractInfo({ id, title, contractType, userId, isAdmin }) {
   const sql = isAdmin
-    ? `UPDATE DOCUMENTEN SET TITEL = :title, DOC_TYPE = :contractType WHERE ID_DOC = :id`
-    : `UPDATE DOCUMENTEN SET TITEL = :title, DOC_TYPE = :contractType WHERE ID_DOC = :id AND ID_USER = :userId`;
-  const binds = isAdmin
+    ? `UPDATE DOCUMENTEN SET TITLE = :title, FILE_TYPE = :contractType WHERE ID_DOC = :id`
+    : `UPDATE DOCUMENTEN SET TITLE = :title, FILE_TYPE = :contractType WHERE ID_DOC = :id AND ID_USER = :userId`;
+
+  const params = isAdmin
     ? { id, title, contractType }
     : { id, title, contractType, userId };
-  const result = await query(sql, binds, { autoCommit: true });
+
+  const result = await execute(sql, params);
   return result;
 }
 
 export async function getPendingContracts() {
-  const sql = `SELECT d.*, d.FULLTEXT, u.EMAIL AS USER_EMAIL FROM DOCUMENTEN d JOIN USERS u ON u.ID_USER = d.ID_USER WHERE d.STATUS = 'pending'`;
-  const result = await query(sql, {});
+  const result = await query(
+    `SELECT d.*, u.EMAIL AS USER_EMAIL
+     FROM DOCUMENTEN d
+     JOIN USERS u ON u.ID_USER = d.ID_USER
+     WHERE d.STATUS = 'pending'`
+  );
+
   return result.rows || [];
 }
 
 export async function markContractDone(idDoc) {
-  await query(`UPDATE DOCUMENTEN SET STATUS = 'done' WHERE ID_DOC = :idDoc`, { idDoc }, { autoCommit: true });
+  await execute(
+    `UPDATE DOCUMENTEN SET STATUS = 'done' WHERE ID_DOC = :idDoc`,
+    { idDoc }
+  );
 }
 
 export async function runAnalysisForContract(contract) {
-  // Haal de tekst op uit de samenvatting (TEKST) of uit fullText (voor nieuwe contracts)
-  let text = contract.TEKST || contract.text || contract.FULLTEXT || contract.fullText || '';
-  if (text && typeof text === 'object' && typeof text.on === 'function') {
-    text = await readLobToString(text);
-  }
+  // Get text from summary or fulltext
+  let text = contract.SUMMARY || contract.summary || contract.FULLTEXT || contract.fullText || '';
+
+  // Fallback: fetch from database if needed
   if (!text && contract.ID_DOC) {
-    // Fallback: probeer tekst op te halen uit de database
-    const result = await query('SELECT TEKST FROM SAMENVATTING WHERE ID_DOC = :idDoc', { idDoc: contract.ID_DOC });
-    if (result.rows && result.rows[0] && result.rows[0].TEKST) {
-      text = result.rows[0].TEKST;
-      if (text && typeof text === 'object' && typeof text.on === 'function') {
-        text = await readLobToString(text);
-      }
+    const result = await query(
+      `SELECT SUMMARY FROM SAMENVATTING WHERE ID_DOC = :idDoc`,
+      { idDoc: contract.ID_DOC }
+    );
+    if (result.rows && result.rows[0] && result.rows[0].SUMMARY) {
+      text = result.rows[0].SUMMARY;
     }
   }
-  // Roep direct Gemini aan met alleen de tekst (geen LLM1 meer)
+
+  // Call AI orchestrator
   const orchestrator = await import('../services/ai-orchestrator.service.js');
   let aiResult;
   try {
-    aiResult = await orchestrator.analyzeContractText(text, contract.DOC_TYPE || contract.docType || '', '');
+    aiResult = await orchestrator.analyzeContractText(text, contract.FILE_TYPE || contract.docType || '', '');
   } catch (e) {
     throw e;
   }
-  // Gebruik de Gemini output direct als analysisJson
+
   return {
     summary: aiResult.humanSummary || aiResult.summary || '',
     riskScore: aiResult.overallRiskScore || aiResult.riskScore || 5,
-    analysisJson: aiResult
+    analysisJson: aiResult,
   };
 }
 
-// Worker: update ook de titel in DOCUMENTEN na analyse
+// Update document title and type after analysis
 export async function updateDocumentTitleAndType(idDoc, title, docType) {
-  await query(
-    `UPDATE DOCUMENTEN SET TITEL = :title, DOC_TYPE = :docType WHERE ID_DOC = :idDoc`,
-    { idDoc, title, docType },
-    { autoCommit: true }
+  await execute(
+    `UPDATE DOCUMENTEN SET TITLE = :title, FILE_TYPE = :docType WHERE ID_DOC = :idDoc`,
+    { idDoc, title, docType }
   );
 }
 
 export async function saveAnalysisResult(idDoc, { summary, riskScore, analysisJson }) {
-  console.log('[saveAnalysisResult] idDoc:', idDoc, 'summary:', summary, 'riskScore:', riskScore, 'analysisJson:', analysisJson)
-  // Verwijder eerst bestaande samenvatting voor dit document (1-op-1 relatie)
-  await query(`DELETE FROM SAMENVATTING WHERE ID_DOC = :idDoc`, { idDoc }, { autoCommit: true });
+  console.log('[saveAnalysisResult] idDoc:', idDoc, 'riskScore:', riskScore);
+
+  // Delete existing summary for this document
+  await execute(
+    `DELETE FROM SAMENVATTING WHERE ID_DOC = :idDoc`,
+    { idDoc }
+  );
+
   try {
-    const insertResult = await query(
-      `INSERT INTO SAMENVATTING (ID_DOC, TEKST, RISK_SCORE, ANALYSE_JSON)
-       VALUES (:idDoc, :summary, :riskScore, :analysisJson)`,
+    // Insert new summary
+    const insertResult = await execute(
+      `INSERT INTO SAMENVATTING (ID_DOC, SUMMARY, RISK_SCORE, KEY_CLAUSES, RED_FLAGS)
+       VALUES (:idDoc, :summary, :riskScore, :keyClauses, :redFlags)`,
       {
         idDoc,
         summary,
         riskScore,
-        analysisJson: analysisJson ? JSON.stringify(analysisJson) : null
-      },
-      { autoCommit: true }
+        keyClauses: analysisJson?.keyClauses ? JSON.stringify(analysisJson.keyClauses) : null,
+        redFlags: analysisJson?.redFlags ? JSON.stringify(analysisJson.redFlags) : null,
+      }
     );
-    console.log('[saveAnalysisResult] Inserted SAMENVATTING result:', insertResult)
-    const check = await query('SELECT SAMENVATTING_ID, ANALYSE_JSON FROM SAMENVATTING WHERE ID_DOC = :idDoc', { idDoc });
-    console.log('[saveAnalysisResult] ANALYSE_JSON direct na insert:', check.rows)
+
+    console.log('[saveAnalysisResult] Inserted SAMENVATTING result:', insertResult);
+
+    // Update document risk score
+    await execute(
+      `UPDATE DOCUMENTEN SET RISK_SCORE = :riskScore, STATUS = 'done' WHERE ID_DOC = :idDoc`,
+      { idDoc, riskScore }
+    );
   } catch (err) {
-    console.error('[saveAnalysisResult] ERROR during insert:', err)
+    console.error('[saveAnalysisResult] ERROR during insert:', err);
   }
 }

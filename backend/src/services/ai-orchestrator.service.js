@@ -66,48 +66,54 @@ async function runGeminiLegal({ prompt }) {
 export async function analyzeContractText(rawText, contractType = '', notes = '') {
   // GEEN truncatie, stuur de volledige tekst naar Gemini
   // Prompt optimalisatie: dwing alleen JSON af
-  const prompt = `You are a legal contract analysis assistant. Given the contract text below, generate a detailed JSON report with the following structure:
+  const prompt = `Je bent een expert in juridische contractanalyse. Analyseer de onderstaande contracttekst en genereer een zeer gedetailleerd JSON-rapport in het Nederlands met de volgende structuur:
 
 {
-  "title": "A short, descriptive title for this contract.",
-  "contractType": "The type of contract (e.g. NDA, Service Agreement, Employment Contract, etc.)",
-  "analyzedAt": "The current date and time in ISO format.",
-  "overallRiskScore": "A number from 1 (very low risk) to 10 (very high risk) summarizing the overall legal risk.",
-  "overallRisk": "A one-word risk label: 'low', 'medium', or 'high'.",
-  "overallRiskLabel": "A human-friendly risk label (e.g. 'Low risk', 'Medium risk', 'High risk').",
-  "humanSummary": "A concise summary of the contract in plain English (3-6 sentences).",
-  "keySummary": "A bullet-point summary of the main legal risks and issues.",
-  "executiveSummary": "A longer, detailed summary of the contract's content, purpose, parties, and main points (6-12 sentences).",
-  "focusTags": ["Relevant keywords or topics, e.g. 'confidentiality', 'liability', 'termination', ..."],
-  "keyFindings": ["List of the most important legal findings, issues, or unusual clauses."],
+  "title": "Een korte, beschrijvende titel voor dit contract.",
+  "contractType": "Het type contract (bijv. NDA, Dienstverleningsovereenkomst, Arbeidsovereenkomst, etc.)",
+  "analyzedAt": "De huidige datum en tijd in ISO-formaat.",
+  "overallRiskScore": "Een getal van 1 (zeer laag risico) tot 10 (zeer hoog risico) dat het algemene juridische risico samenvat.",
+  "overallRisk": "Een risicolabel van één woord: 'low', 'medium', of 'high'.",
+  "overallRiskLabel": "Een gebruiksvriendelijk risicolabel (bijv. 'Laag risico', 'Gemiddeld risico', 'Hoog risico').",
+  "humanSummary": "Een beknopte samenvatting van het contract in begrijpelijk Nederlands (4-8 zinnen). Focus op de essentie voor de gebruiker.",
+  "keySummary": "Een puntsgewijze samenvatting van de belangrijkste juridische risico's en aandachtspunten.",
+  "executiveSummary": "Een zeer gedetailleerde samenvatting van de inhoud, het doel, de partijen en de belangrijkste bepalingen van het contract (10-20 zinnen). Wees zeer specifiek.",
+  "focusTags": ["Relevante trefwoorden of onderwerpen, bijv. 'geheimhouding', 'aansprakelijkheid', 'beëindiging', ..."],
+  "keyFindings": [
+    { "title": "Titel van de bevinding", "body": "Gedetailleerde uitleg van de bevinding, waarom het belangrijk is en wat het risico is." }
+  ],
   "clauseBreakdown": {
-    "highRiskClauses": "Number of high-risk clauses.",
-    "mediumRiskClauses": "Number of medium-risk clauses.",
-    "lowRiskClauses": "Number of low-risk clauses."
+    "highRiskClauses": "Aantal clausules met een hoog risico.",
+    "mediumRiskClauses": "Aantal clausules met een gemiddeld risico.",
+    "lowRiskClauses": "Aantal clausules met een laag risico."
   },
   "clauses": {
-    "duration": { "present": true/false, "text": "...", "risk": "low/medium/high", "issues": ["..."] },
+    "duration": { "present": true/false, "text": "De letterlijke of geparafraseerde tekst uit het contract.", "risk": "low/medium/high", "issues": ["Lijst met specifieke problemen of risico's bij deze clausule"] },
     "termination": { "present": true/false, "text": "...", "risk": "low/medium/high", "issues": ["..."] },
     "renewal": { "present": true/false, "text": "...", "risk": "low/medium/high", "issues": ["..."] },
     "liability": { "present": true/false, "text": "...", "risk": "low/medium/high", "issues": ["..."] },
     "payment": { "present": true/false, "text": "...", "risk": "low/medium/high", "issues": ["..."] },
     "confidentiality": { "present": true/false, "text": "...", "risk": "low/medium/high", "issues": ["..."] },
-    "jurisdiction": { "present": true/false, "text": "...", "risk": "low/medium/high", "issues": ["..."] }
+    "jurisdiction": { "present": true/false, "text": "...", "risk": "low/medium/high", "issues": ["..."] },
+    "intellectualProperty": { "present": true/false, "text": "...", "risk": "low/medium/high", "issues": ["..."] },
+    "nonSolicitation": { "present": true/false, "text": "...", "risk": "low/medium/high", "issues": ["..."] }
   },
-  "recommendedActions": ["Concrete, actionable legal recommendations for the user."]
+  "recommendedActions": [
+    { "title": "Korte titel van de actie", "body": "Gedetailleerde uitleg van wat de gebruiker moet doen of onderhandelen." }
+  ]
 }
 
-Instructions:
-- Fill in every field, even if empty (use empty string, 0, or [] as appropriate).
-- Do NOT use placeholders like [PARTY_1], [DATUM], [OPTIONEEL], [VOLGT], etc. Only use real values from the contract.
-- Only return valid JSON. No explanation, no markdown, no extra text before or after the JSON. Do not add any plain text, comments, or explanations before or after the JSON. The output must be strictly valid JSON only.
-- If a clause is not present, set "present": false and leave other fields empty.
-- Be as complete and detailed as possible, but keep the output strictly valid JSON.
-- If the contract text is empty or missing, return a JSON object with a field "error": "No contract text provided" and do not generate a sample analysis.
+Instructies:
+- Vul elk veld in, zelfs als het leeg is (gebruik een lege string, 0 of [] waar nodig).
+- Gebruik GEEN placeholders zoals [PARTIJ_1], [DATUM], [OPTIONEEL], [VOLGT], etc. Gebruik alleen echte waarden uit het contract.
+- Lever enkel geldige JSON op. Geen uitleg, geen markdown, geen extra tekst voor of na de JSON.
+- Als een clausule niet aanwezig is, zet "present": false en laat de andere velden leeg of standaard.
+- Wees zo volledig en gedetailleerd mogelijk. Geef minimaal 5 'keyFindings' en 3 'recommendedActions'.
+- De taal van de output MOET Nederlands zijn.
 
-Contract text:
+Contracttekst:
 ${rawText}
-`;
+`;;
 
   const resultText = await runGeminiLegal({ prompt });
   let llm2Result;
